@@ -1,5 +1,7 @@
 package com.example.cs465;
 
+import static android.graphics.Color.argb;
+
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -13,6 +15,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import android.content.pm.ApplicationInfo;
@@ -67,7 +70,7 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
 
         String originName = "Illini Union";
         String destinationName = "Foellinger Auditorium";
-        List<String> intermediaries = Arrays.asList("ARC, Champaign");
+        List<String> intermediaries = Arrays.asList("Bread Company, Urbana", "ARC, Champaign", "CRCE");
 
         Log.d("RouteSelectorActivity", "API KEY: " + apiKey);
 
@@ -77,9 +80,12 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
                     RouteGeneratorActivityHelper.getRoutes(originLatLng, destLatLng, intermediaryLatLngs, apiKey, routes -> {
                         for (int i = 0; i < routes.size(); i++) {
                             List<LatLng> path = routes.get(i);
+
                             int color = routeColors[i % routeColors.length];
 
-                            mMap.addPolyline(new PolylineOptions().addAll(path).color(color).width(10f));
+                            Polyline polyline = mMap.addPolyline(new PolylineOptions().addAll(path).color(color).width(10f));
+                            polyline.setClickable(true);
+                            polyline.setTag("Route #" + i);
                         }
 
                         LatLngBounds.Builder builder = new LatLngBounds.Builder();
@@ -89,6 +95,9 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
 
                         LatLngBounds bounds = builder.build();
                         mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
+                        mMap.setOnPolylineClickListener(polyline ->
+                                Log.d("Map", "Clicked " + polyline.getTag())
+                        );
                     });
                 });
             });

@@ -11,6 +11,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import okhttp3.Call;
@@ -29,6 +30,52 @@ public class RouteGeneratorActivityHelper {
     }
 
     public static void getRoutes(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, RoutesCallback routesCallback) {
+        if (intermediaries == null || intermediaries.isEmpty()) {
+            getSingleRoute(origin, destination, null, apiKey, routesCallback);
+            return;
+        }
+
+        List<List<LatLng>> allRoutes = new ArrayList<>();
+        List<List<LatLng>> permutations = generatePermutations(intermediaries);
+
+        final int total = permutations.size();
+        final int[] completed = {0};
+
+        for (List<LatLng> midPoints: permutations) {
+            getSingleRoute(origin, destination, midPoints, apiKey, singleRoute -> {
+                synchronized (allRoutes) {
+                    if (!singleRoute.isEmpty()) {
+                        allRoutes.add(singleRoute.get(0));
+                    }
+                    completed[0]++;
+                    Log.d("RouteGeneratorHelper", "Received " + singleRoute.size() + " routes. Total so far: " + allRoutes.size());
+                    if (completed[0] == total) {
+                        Log.d("RouteGeneratorHelper", "All routes fetched! Total: " + allRoutes.size());
+                        routesCallback.onRoutesFetched(allRoutes);
+                    }
+                }
+            });
+        }
+    }
+
+    private static List<List<LatLng>> generatePermutations(List<LatLng> points) {
+        List<List<LatLng>> results = new ArrayList<>();
+        permute(points, 0, results);
+        return results;
+    }
+
+    private static void permute(List<LatLng> arr, int k, List<List<LatLng>> results) {
+        for (int i = k; i < arr.size(); i++) {
+            Collections.swap(arr, i, k);
+            permute(arr, k + 1, results);
+            Collections.swap(arr, k, i);
+        }
+        if (k == arr.size() - 1) {
+            results.add(new ArrayList<>(arr));
+        }
+    }
+
+    private static void getSingleRoute(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, RoutesCallback routesCallback) {
         OkHttpClient client = new OkHttpClient();
 
         String url = "https://routes.googleapis.com/directions/v2:computeRoutes?key=" + apiKey;
@@ -53,15 +100,20 @@ public class RouteGeneratorActivityHelper {
 
             bodyJson.put("origin", originObject);
             bodyJson.put("destination", destObject);
-            for (LatLng interm: intermediaries) {
-                JSONObject intermediatesLatLng = new JSONObject();
-                intermediatesLatLng.put("latitude", interm.latitude);
-                intermediatesLatLng.put("longitude", interm.longitude);
-                JSONObject intermediatesLocation = new JSONObject();
-                intermediatesLocation.put("latLng", intermediatesLatLng);
-                JSONObject intermediatesObject = new JSONObject();
-                intermediatesObject.put("location", intermediatesLocation);
-                bodyJson.put("intermediates", intermediatesObject);
+
+            if (intermediaries != null && !intermediaries.isEmpty()) {
+                JSONArray intermediatesArray = new JSONArray();
+                for (LatLng interm: intermediaries) {
+                    JSONObject intermediatesLatLng = new JSONObject();
+                    intermediatesLatLng.put("latitude", interm.latitude);
+                    intermediatesLatLng.put("longitude", interm.longitude);
+                    JSONObject intermediatesLocation = new JSONObject();
+                    intermediatesLocation.put("latLng", intermediatesLatLng);
+                    JSONObject intermediatesObject = new JSONObject();
+                    intermediatesObject.put("location", intermediatesLocation);
+                    intermediatesArray.put(intermediatesObject);
+                }
+                bodyJson.put("intermediates", intermediatesArray);
             }
             bodyJson.put("travelMode", "WALK");
             bodyJson.put("computeAlternativeRoutes", true);
