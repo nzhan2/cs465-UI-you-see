@@ -13,6 +13,7 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import android.content.pm.ApplicationInfo;
@@ -66,6 +67,11 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
 
                         mMap.addPolyline(new PolylineOptions().addAll(path).color(color).width(10f));
                     }
+
+                    mMap.addMarker(new MarkerOptions()
+                            .position(originLatLng)
+                            .title("Start")
+                    );
 
                     LatLngBounds.Builder builder = new LatLngBounds.Builder();
                     for (LatLng point: routes.get(0)) {
