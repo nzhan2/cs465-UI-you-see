@@ -28,7 +28,7 @@ public class RouteGeneratorActivityHelper {
         void onGeocoded(LatLng latLng);
     }
 
-    public static void getRoutes(LatLng origin, LatLng destination, String apiKey, RoutesCallback routesCallback) {
+    public static void getRoutes(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, RoutesCallback routesCallback) {
         OkHttpClient client = new OkHttpClient();
 
         String url = "https://routes.googleapis.com/directions/v2:computeRoutes?key=" + apiKey;
@@ -38,26 +38,31 @@ public class RouteGeneratorActivityHelper {
             JSONObject originLatLng = new JSONObject();
             originLatLng.put("latitude", origin.latitude);
             originLatLng.put("longitude", origin.longitude);
-
             JSONObject originLocation = new JSONObject();
             originLocation.put("latLng", originLatLng);
-
             JSONObject originObject = new JSONObject();
             originObject.put("location", originLocation);
 
             JSONObject destLatLng = new JSONObject();
             destLatLng.put("latitude", destination.latitude);
             destLatLng.put("longitude", destination.longitude);
-
             JSONObject destLocation = new JSONObject();
             destLocation.put("latLng", destLatLng);
-
             JSONObject destObject = new JSONObject();
             destObject.put("location", destLocation);
 
-
             bodyJson.put("origin", originObject);
             bodyJson.put("destination", destObject);
+            for (LatLng interm: intermediaries) {
+                JSONObject intermediatesLatLng = new JSONObject();
+                intermediatesLatLng.put("latitude", interm.latitude);
+                intermediatesLatLng.put("longitude", interm.longitude);
+                JSONObject intermediatesLocation = new JSONObject();
+                intermediatesLocation.put("latLng", intermediatesLatLng);
+                JSONObject intermediatesObject = new JSONObject();
+                intermediatesObject.put("location", intermediatesLocation);
+                bodyJson.put("intermediates", intermediatesObject);
+            }
             bodyJson.put("travelMode", "WALK");
             bodyJson.put("computeAlternativeRoutes", true);
         } catch (Exception e) {
