@@ -73,6 +73,7 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
                             .title("Start")
                     );
 
+
                     LatLngBounds.Builder builder = new LatLngBounds.Builder();
                     for (LatLng point: routes.get(0)) {
                         builder.include(point);
