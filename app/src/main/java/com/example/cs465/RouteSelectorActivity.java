@@ -17,13 +17,13 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.content.pm.ApplicationInfo;
 import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class RouteSelectorActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -83,9 +83,11 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
 
                             int color = routeColors[i % routeColors.length];
 
-                            Polyline polyline = mMap.addPolyline(new PolylineOptions().addAll(path).color(color).width(10f));
-                            polyline.setClickable(true);
-                            polyline.setTag("Route #" + i);
+                            mMap.addPolyline(new PolylineOptions().addAll(path).color(color).width(10f));
+                            mMap.addMarker(new MarkerOptions()
+                                    .position(originLatLng)
+                                    .title("Start")
+                            );
                         }
 
                         LatLngBounds.Builder builder = new LatLngBounds.Builder();
