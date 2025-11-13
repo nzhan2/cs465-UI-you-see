@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class RouteSelectorActivity extends FragmentActivity implements OnMapReadyCallback {
+public class RouteGeneratorActivity extends FragmentActivity implements OnMapReadyCallback {
     private GoogleMap mMap;
     String apiKey;
 
@@ -45,6 +45,10 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
 
     private TextView routeInfoTextView;
 
+    private String start;
+    private String end;
+    private ArrayList<String> intermediateLocations;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,6 +64,11 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        start = getIntent().getStringExtra("start");
+        end = getIntent().getStringExtra("end");
+
+        intermediateLocations = getIntent().getStringArrayListExtra("intermediates");
 
         Button backButton = findViewById(R.id.backButton);
         backButton.setOnClickListener(v -> {
@@ -87,11 +96,10 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
         mMap.setMinZoomPreference(10.0f);
         mMap.setMaxZoomPreference(20.0f);
 
-        String originName = "Illini Union";
-        String destinationName = "Foellinger Auditorium";
-        List<String> intermediaries = Arrays.asList("Bread Company, Urbana", "ARC, Champaign", "CRCE");
+        String originName = start;
+        String destinationName = end;
 
-        Log.d("RouteSelectorActivity", "API KEY: " + apiKey);
+        List<String> intermediaries = intermediateLocations;
 
         RouteGeneratorActivityHelper.geocodePlace(originName, apiKey, originLatLng -> {
             RouteGeneratorActivityHelper.geocodePlace(destinationName, apiKey, destLatLng -> {
@@ -100,6 +108,7 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
                         StringBuilder infoBuilder = new StringBuilder();
 
                         for (int i = 0; i < routes.size(); i++) {
+                            Log.d("debug", "drawing a route");
                             RouteInfo route = routes.get(i);
                             int color = routeColors[i % routeColors.length];
 
@@ -112,7 +121,6 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
                         }
 
                         routeInfoTextView.setText(infoBuilder.toString());
-                        Log.d("RouteSelectorActivity", "infoBuilder: " + infoBuilder.toString());
 
                         LatLngBounds.Builder builder = new LatLngBounds.Builder();
                         for (LatLng point: routes.get(0).path) {
@@ -153,6 +161,7 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
         }
 
         String name = placeNames.get(index);
+        Log.d("Test", "name: " + name);
         RouteGeneratorActivityHelper.geocodePlace(name, apiKey, latLng -> {
             results.add(latLng);
             geocodeNextPlace(index + 1, placeNames, results, apiKey, listener);

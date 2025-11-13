@@ -7,8 +7,11 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,27 +24,26 @@ public class RouteInputActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_route_input);
 
-        String[] locations = new String[] {"Illini Union", "Foellinger Auditorium", "ARC", "Altgeld", "CRCE"};
+        //String[] locations = new String[] {"Illini Union", "Foellinger Auditorium", "ARC", "Altgeld", "CRCE"};
 
-        AutoCompleteTextView startEdit = findViewById(R.id.startEditText);
-        AutoCompleteTextView endEdit = findViewById(R.id.endEditText);
-        AutoCompleteTextView landmarksEditText = findViewById(R.id.landmarksEditText);
+        EditText startEdit = findViewById(R.id.startEditText);
+        EditText endEdit = findViewById(R.id.endEditText);
+        EditText landmarksEditText = findViewById(R.id.landmarksEditText);
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_dropdown_item_1line, locations);
+       // ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+       //         android.R.layout.simple_dropdown_item_1line, locations);
 
-        startEdit.setAdapter(adapter);
+       /* startEdit.setAdapter(adapter);
         endEdit.setAdapter(adapter);
-        landmarksEditText.setAdapter(adapter);
+        landmarksEditText.setAdapter(adapter);*/
 
         // Optional: show suggestions after typing 1 character
-        startEdit.setThreshold(1);
+        /*startEdit.setThreshold(1);
         endEdit.setThreshold(1);
-        landmarksEditText.setThreshold(1);
+        landmarksEditText.setThreshold(1);*/
 
         Button generateButton = findViewById(R.id.generateButton);
         RadioButton timeRadio = findViewById(R.id.timeRadio);
-        RadioButton distanceRadio = findViewById(R.id.distanceRadio);
         EditText distanceEdit = findViewById(R.id.distanceEditText);
 
         generateButton.setOnClickListener(v -> {
@@ -49,11 +51,20 @@ public class RouteInputActivity extends AppCompatActivity {
             String end = endEdit.getText().toString().trim();
             List<String> intermediates = Arrays.asList(
                     landmarksEditText.getText().toString().trim().split("\\s*,\\s*"));
+            ArrayList<String> locationList = new ArrayList<>();
+            locationList.add(start);
+            locationList.addAll(intermediates);
+            locationList.add(end);
+
+            Intent intent = new Intent(RouteInputActivity.this, RouteGeneratorActivity.class);
+            /*
+            intent.putStringArrayListExtra("locationList", locationList);
+            startActivity(intent);*/
+
 
             String measure = (timeRadio.isChecked()) ? "time" : "distance";
             String distance = distanceEdit.getText().toString().trim();
 
-            Intent intent = new Intent(RouteInputActivity.this, RouteSelectorActivity.class);
             intent.putExtra("start", start);
             intent.putStringArrayListExtra("intermediates", new ArrayList<>(intermediates));
             intent.putExtra("end", end);
