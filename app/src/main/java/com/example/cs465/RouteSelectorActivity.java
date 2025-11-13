@@ -20,6 +20,8 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.content.pm.ApplicationInfo;
 import android.util.Log;
+import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -58,6 +60,20 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        Button backButton = findViewById(R.id.backButton);
+        backButton.setOnClickListener(v -> {
+            finish(); // returns to MainActivity (the previous screen)
+        });
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
