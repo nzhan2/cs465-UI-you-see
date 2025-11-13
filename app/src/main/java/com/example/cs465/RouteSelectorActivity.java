@@ -1,5 +1,7 @@
 package com.example.cs465;
 
+import static android.graphics.Color.argb;
+
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
