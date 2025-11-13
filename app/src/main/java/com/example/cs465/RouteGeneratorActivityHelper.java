@@ -22,7 +22,7 @@ import okhttp3.Response;
 
 public class RouteGeneratorActivityHelper {
     public interface RoutesCallback {
-        void onRoutesFetched(List<List<LatLng>> routes);
+        void onRoutesFetched(List<RouteInfo> routes);
     }
 
     public interface GeocodeCallback {
@@ -35,7 +35,7 @@ public class RouteGeneratorActivityHelper {
             return;
         }
 
-        List<List<LatLng>> allRoutes = new ArrayList<>();
+        List<RouteInfo> allRoutes = new ArrayList<>();
         List<List<LatLng>> permutations = generatePermutations(intermediaries);
 
         final int total = permutations.size();
@@ -45,7 +45,7 @@ public class RouteGeneratorActivityHelper {
             getSingleRoute(origin, destination, midPoints, apiKey, singleRoute -> {
                 synchronized (allRoutes) {
                     if (!singleRoute.isEmpty()) {
-                        allRoutes.add(singleRoute.get(0));
+                        allRoutes.addAll(singleRoute);
                     }
                     completed[0]++;
                     Log.d("RouteGeneratorHelper", "Received " + singleRoute.size() + " routes. Total so far: " + allRoutes.size());
@@ -136,7 +136,7 @@ public class RouteGeneratorActivityHelper {
             public void onResponse(Call call, Response response) throws IOException {
                 String jsonData = response.body().string();
                 Log.d("RouteHelper", "Routes API response: " + jsonData);
-                List<List<LatLng>> allRoutes = new ArrayList<>();
+                List<RouteInfo> routeInfos = new ArrayList<>();
 
                 try {
                     JSONObject jsonObject = new JSONObject(jsonData);
@@ -145,10 +145,18 @@ public class RouteGeneratorActivityHelper {
                     for (int i = 0; i < routes.length(); i++) {
                         JSONObject route = routes.getJSONObject(i);
                         String polyline = route.getJSONObject("polyline").getString("encodedPolyline");
+
+                        double distanceMeters = route.optDouble("distanceMeters", 0);
+                        double durationSeconds = Double.parseDouble(route.optString("duration").replace("s", ""));
+
+                        String distanceText = String.format("%.1f km", distanceMeters / 1000.0);
+                        int durationMinutes = (int) Math.ceil(durationSeconds / 60.0);
+                        String durationText = durationMinutes + "min";
+
                         List<LatLng> decodePath = PolyUtil.decode(polyline);
-                        allRoutes.add(decodePath);
+                        routeInfos.add(new RouteInfo(decodePath, distanceText, durationText));
                     }
-                    new Handler(Looper.getMainLooper()).post(() -> routesCallback.onRoutesFetched(allRoutes));
+                    new Handler(Looper.getMainLooper()).post(() -> routesCallback.onRoutesFetched(routeInfos));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
