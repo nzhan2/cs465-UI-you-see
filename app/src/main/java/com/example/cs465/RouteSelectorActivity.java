@@ -15,8 +15,6 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -28,12 +26,14 @@ import java.util.Arrays;
 import java.util.List;
 
 public class RouteSelectorActivity extends FragmentActivity implements OnMapReadyCallback {
+
     private GoogleMap mMap;
     String apiKey;
 
     interface OnAllGeocodedListener {
         void onAllGeocoded(List<LatLng> allLatLngs);
     }
+
     int[] routeColors = {
             Color.BLUE,
             Color.RED,
@@ -48,15 +48,21 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
         setContentView(R.layout.activity_maps);
 
         try {
-            ApplicationInfo appInfo = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA);
+            ApplicationInfo appInfo = getPackageManager().getApplicationInfo(
+                    getPackageName(),
+                    PackageManager.GET_META_DATA
+            );
             apiKey = appInfo.metaData.getString("com.google.android.geo.API_KEY");
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        SupportMapFragment mapFragment =
+                (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+
         mapFragment.getMapAsync(this);
     }
+
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -71,37 +77,65 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
 
         String originName = "Illini Union";
         String destinationName = "Foellinger Auditorium";
-        List<String> intermediaries = Arrays.asList("Bread Company, Urbana", "ARC, Champaign", "CRCE");
+
+        List<String> intermediaries = Arrays.asList(
+                "Bread Company, Urbana",
+                "ARC, Champaign",
+                "CRCE"
+        );
 
         Log.d("RouteSelectorActivity", "API KEY: " + apiKey);
 
         RouteGeneratorActivityHelper.geocodePlace(originName, apiKey, originLatLng -> {
             RouteGeneratorActivityHelper.geocodePlace(destinationName, apiKey, destLatLng -> {
                 geocodeAllPlaces(intermediaries, apiKey, intermediaryLatLngs -> {
-                    RouteGeneratorActivityHelper.getRoutes(originLatLng, destLatLng, intermediaryLatLngs, apiKey, routes -> {
-                        for (int i = 0; i < routes.size(); i++) {
-                            List<LatLng> path = routes.get(i);
 
-                            int color = routeColors[i % routeColors.length];
+                    RouteGeneratorActivityHelper.getRoutes(
+                            originLatLng,
+                            destLatLng,
+                            intermediaryLatLngs,
+                            apiKey,
+                            routes -> {
 
-                            mMap.addPolyline(new PolylineOptions().addAll(path).color(color).width(10f));
-                            mMap.addMarker(new MarkerOptions()
-                                    .position(originLatLng)
-                                    .title("Start")
-                            );
-                        }
+                                for (int i = 0; i < routes.size(); i++) {
+                                    List<LatLng> path = routes.get(i);
+                                    int color = routeColors[i % routeColors.length];
 
-                        LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                        for (LatLng point: routes.get(0)) {
-                            builder.include(point);
-                        }
+                                    mMap.addPolyline(
+                                            new PolylineOptions().addAll(path).color(color).width(10f)
+                                    );
 
-                        LatLngBounds bounds = builder.build();
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
-                        mMap.setOnPolylineClickListener(polyline ->
-                                Log.d("Map", "Clicked " + polyline.getTag())
-                        );
-                    });
+                                    mMap.addMarker(
+                                            new MarkerOptions()
+                                                    .position(originLatLng)
+                                                    .title("Start")
+                                    );
+                                }
+
+                                LatLngBounds.Builder builder = new LatLngBounds.Builder();
+                                for (LatLng point : routes.get(0)) {
+                                    builder.include(point);
+                                }
+
+                                LatLngBounds bounds = builder.build();
+                                mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
+
+                                mMap.setOnPolylineClickListener(polyline ->
+                                        Log.d("Map", "Clicked " + polyline.getTag()));
+
+
+                                HistoryStorage.saveRoute(
+                                        RouteSelectorActivity.this,
+                                        new RouteHistoryItem(
+                                                originName,
+                                                destinationName,
+                                                System.currentTimeMillis()
+                                        )
+                                );
+
+                                Log.d("HistorySave", "Saved route: " + originName + " → " + destinationName);
+                            }
+                    );
                 });
             });
         });
@@ -118,13 +152,17 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
         geocodeNextPlace(0, placeNames, results, apiKey, listener);
     }
 
-    private void geocodeNextPlace(int index, List<String> placeNames, List<LatLng> results, String apiKey, OnAllGeocodedListener listener) {
+    private void geocodeNextPlace(int index, List<String> placeNames,
+                                  List<LatLng> results, String apiKey,
+                                  OnAllGeocodedListener listener) {
+
         if (index >= placeNames.size()) {
             listener.onAllGeocoded(results);
             return;
         }
 
         String name = placeNames.get(index);
+
         RouteGeneratorActivityHelper.geocodePlace(name, apiKey, latLng -> {
             results.add(latLng);
             geocodeNextPlace(index + 1, placeNames, results, apiKey, listener);
