@@ -1,7 +1,5 @@
 package com.example.cs465;
 
-import static android.graphics.Color.argb;
-
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -15,12 +13,12 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.content.pm.ApplicationInfo;
 import android.util.Log;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,10 +39,13 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
             Color.CYAN
     };
 
+    private TextView routeInfoTextView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+        routeInfoTextView = findViewById(R.id.routeInfoTextView);
 
         try {
             ApplicationInfo appInfo = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA);
@@ -78,20 +79,25 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
             RouteGeneratorActivityHelper.geocodePlace(destinationName, apiKey, destLatLng -> {
                 geocodeAllPlaces(intermediaries, apiKey, intermediaryLatLngs -> {
                     RouteGeneratorActivityHelper.getRoutes(originLatLng, destLatLng, intermediaryLatLngs, apiKey, routes -> {
-                        for (int i = 0; i < routes.size(); i++) {
-                            List<LatLng> path = routes.get(i);
+                        StringBuilder infoBuilder = new StringBuilder();
 
+                        for (int i = 0; i < routes.size(); i++) {
+                            RouteInfo route = routes.get(i);
                             int color = routeColors[i % routeColors.length];
 
-                            mMap.addPolyline(new PolylineOptions().addAll(path).color(color).width(10f));
+                            mMap.addPolyline(new PolylineOptions().addAll(route.path).color(color).width(10f));
                             mMap.addMarker(new MarkerOptions()
                                     .position(originLatLng)
                                     .title("Start")
                             );
+                            infoBuilder.append("Route ").append(i + 1).append(route.distanceText).append(", ").append(route.durationText).append("\n");
                         }
 
+                        routeInfoTextView.setText(infoBuilder.toString());
+                        Log.d("RouteSelectorActivity", "infoBuilder: " + infoBuilder.toString());
+
                         LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                        for (LatLng point: routes.get(0)) {
+                        for (LatLng point: routes.get(0).path) {
                             builder.include(point);
                         }
 
@@ -104,6 +110,11 @@ public class RouteSelectorActivity extends FragmentActivity implements OnMapRead
                 });
             });
         });
+        routeInfoTextView.post(() -> {
+            int paddingBottom = routeInfoTextView.getHeight() + 400;
+            mMap.setPadding(0, 0, 0, paddingBottom);
+        });
+
     }
 
     private void geocodeAllPlaces(List<String> placeNames, String apiKey, OnAllGeocodedListener listener) {
