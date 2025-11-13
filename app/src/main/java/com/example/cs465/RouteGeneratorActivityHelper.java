@@ -147,7 +147,7 @@ public class RouteGeneratorActivityHelper {
                         String polyline = route.getJSONObject("polyline").getString("encodedPolyline");
 
                         double distanceMeters = route.optDouble("distanceMeters", 0);
-                        double durationSeconds = route.optDouble("duration", 0);
+                        double durationSeconds = Double.parseDouble(route.optString("duration").replace("s", ""));
 
                         String distanceText = String.format("%.1f km", distanceMeters / 1000.0);
                         int durationMinutes = (int) Math.ceil(durationSeconds / 60.0);
