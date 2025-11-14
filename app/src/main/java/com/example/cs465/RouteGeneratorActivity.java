@@ -2,10 +2,16 @@ package com.example.cs465;
 
 import static android.graphics.Color.argb;
 
+import android.Manifest;
+import android.app.AlertDialog;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.location.Location;
 import android.os.Bundle;
 
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -15,23 +21,43 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import android.content.pm.ApplicationInfo;
+import android.os.Parcelable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class RouteGeneratorActivity extends FragmentActivity implements OnMapReadyCallback {
+public class RouteGeneratorActivity extends FragmentActivity  implements OnMapReadyCallback,
+        GoogleMap.OnMyLocationButtonClickListener,
+        GoogleMap.OnMyLocationClickListener {
     private GoogleMap mMap;
+
+    private Button saveButton;
+    private Button navButton;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
+    private boolean permissionDenied = false;
     String apiKey;
+
+    private List<LatLng> savedIntermediaryLatLngs = new ArrayList<>();
 
     interface OnAllGeocodedListener {
         void onAllGeocoded(List<LatLng> allLatLngs);
@@ -79,6 +105,13 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
         backButton.setOnClickListener(v -> {
             finish(); // returns to MainActivity (the previous screen)
         });
+
+        saveButton = findViewById(R.id.saveButton);
+        navButton = findViewById(R.id.navButton);
+        saveButton.setVisibility(View.GONE);
+        navButton.setVisibility(View.GONE);
+
+
     }
 
     @Override
@@ -91,12 +124,17 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
     }
 
     @Override
-    public void onMapReady(GoogleMap googleMap) {
+    public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
+
+        mMap.setOnMyLocationButtonClickListener(this);
+        mMap.setOnMyLocationClickListener(this);
+        enableMyLocation();
 
         UiSettings uiSettings = mMap.getUiSettings();
         uiSettings.setZoomControlsEnabled(true);
         uiSettings.setZoomGesturesEnabled(true);
+        uiSettings.setMyLocationButtonEnabled(false);
 
         mMap.setMinZoomPreference(10.0f);
         mMap.setMaxZoomPreference(20.0f);
@@ -111,22 +149,49 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
             RouteGeneratorActivityHelper.geocodePlace(destinationName, apiKey, destLatLng -> {
                 geocodeAllPlaces(intermediaries, apiKey, intermediaryLatLngs -> {
                     RouteGeneratorActivityHelper.getRoutes(originLatLng, destLatLng, intermediaryLatLngs, apiKey, routes -> {
-                        StringBuilder infoBuilder = new StringBuilder();
+//                        StringBuilder infoBuilder = new StringBuilder();
+                        SpannableStringBuilder infoBuilder = new SpannableStringBuilder();
+                        savedIntermediaryLatLngs = intermediaryLatLngs;
+
+                        List<Polyline> polylines = new ArrayList<>();
 
                         for (int i = 0; i < routes.size(); i++) {
-                            Log.d("debug", "drawing a route");
                             RouteInfo route = routes.get(i);
                             int color = routeColors[i % routeColors.length];
 
-                            mMap.addPolyline(new PolylineOptions().addAll(route.path).color(color).width(10f));
-                            mMap.addMarker(new MarkerOptions()
-                                    .position(originLatLng)
-                                    .title("Start")
+                            // Draw the route
+                            Polyline polyline = mMap.addPolyline(new PolylineOptions()
+                                    .addAll(route.path)
+                                    .color(color)
+                                    .width(10f));
+
+                            polylines.add(polyline);
+
+                            // Build text line
+                            String text = "Route " + (i + 1) + ": " + route.distanceText + ", " + route.durationText + "\n";
+                            int start = infoBuilder.length();
+                            infoBuilder.append(text);
+                            int end = infoBuilder.length();
+
+                            // Make line clickable
+                            final int index = i; // for lambda
+                            infoBuilder.setSpan(new ClickableSpan() {
+                                @Override
+                                public void onClick(View widget) {
+                                    selectRoute(index, polylines);
+                                }
+                            }, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                            infoBuilder.setSpan(
+                                    new ForegroundColorSpan(color),
+                                    start, end,
+                                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                             );
-                            infoBuilder.append("Route ").append(i + 1).append(route.distanceText).append(", ").append(route.durationText).append("\n");
                         }
 
                         routeInfoTextView.setText(infoBuilder.toString());
+                        routeInfoTextView.setMovementMethod(LinkMovementMethod.getInstance());
+                        routeInfoTextView.setText(infoBuilder);
 
                         LatLngBounds.Builder builder = new LatLngBounds.Builder();
                         for (LatLng point: routes.get(0).path) {
@@ -149,6 +214,168 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
 
     }
 
+    private void selectRoute(int selectedIndex, List<Polyline> polylines) {
+        for (int i = 0; i < polylines.size(); i++) {
+            Polyline p = polylines.get(i);
+
+            if (i == selectedIndex) {
+                // Highlight selected route
+                p.setWidth(20f);       // thicker line
+                p.setZIndex(10);       // bring forward
+            } else {
+                // Normal line — NOT greyed out
+                p.setWidth(10f);
+                p.setZIndex(1);
+            }
+        }
+
+        // Zoom camera to selected route
+        List<LatLng> points = polylines.get(selectedIndex).getPoints();
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        for (LatLng point : points) builder.include(point);
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150));
+
+        saveButton.setVisibility(View.VISIBLE);
+        navButton.setVisibility(View.VISIBLE);
+
+        navButton.setOnClickListener(v -> {
+            Location myLocation = mMap.getMyLocation();
+            if (myLocation == null) {
+                Toast.makeText(this, "Current location not available", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            LatLng currentLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+
+            LatLng routeStart = points.get(0);
+            LatLng routeEnd = points.get(points.size() - 1);
+
+            ArrayList<String> intermediaryLatLings = getIntent().getStringArrayListExtra("intermediates");
+
+
+//            List<LatLng> intermediaryLatLngs = new ArrayList<>();
+//
+//            if (intermediaryLatLings != null) {
+//                for (String s : intermediaryLatLings) {
+////                    String[] parts = s.split(",");
+////                    double lat = Double.parseDouble(parts[0]);
+////                    double lng = Double.parseDouble(parts[1]);
+////                    intermediaryLatLngs.add(new LatLng(lat, lng));
+//                    if (!s.contains(",")) {
+//                        Log.e("ROUTE", "Skipping non-coordinate string: " + s);
+//                        continue;
+//                    }
+//
+//                    try {
+//                        String[] parts = s.split(",");
+//                        double lat = Double.parseDouble(parts[0]);
+//                        double lng = Double.parseDouble(parts[1]);
+//                        intermediaryLatLngs.add(new LatLng(lat, lng));
+//                    } catch (NumberFormatException e) {
+//                        Log.e("ROUTE", "Invalid coordinate format: " + s);
+//                    }
+//                }
+//            }
+
+//            LatLng landmark1 = intermediaryLatLngs.size() > 0 ? intermediaryLatLngs.get(0) : null;
+//            LatLng landmark2 = intermediaryLatLngs.size() > 1 ? intermediaryLatLngs.get(1) : null;
+            LatLng landmark1 = savedIntermediaryLatLngs.size() > 0 ? savedIntermediaryLatLngs.get(0) : null;
+            LatLng landmark2 = savedIntermediaryLatLngs.size() > 1 ? savedIntermediaryLatLngs.get(1) : null;
+
+
+            Intent intent = new Intent(RouteGeneratorActivity.this, NavigationActivity.class);
+            intent.putParcelableArrayListExtra("routePoints", new ArrayList<>(points));
+            intent.putExtra("userLocation", currentLatLng);
+            intent.putExtra("startPoint", routeStart);
+            intent.putExtra("endPoint", routeEnd);
+            intent.putExtra("landmark1", landmark1);
+            intent.putExtra("landmark2", landmark2);
+            startActivity(intent);
+
+//            Intent intent = new Intent(RouteGeneratorActivity.this, NavigationActivity.class);
+//            intent.putParcelableArrayListExtra("routePoints", (ArrayList<? extends Parcelable>) points); // selected route
+//            intent.putExtra("userLocation", currentLatLng); // current location
+//            startActivity(intent);
+
+//            Location myLocation = mMap.getMyLocation();
+//            if (myLocation == null) {
+//                Toast.makeText(this, "Current location not available", Toast.LENGTH_SHORT).show();
+//                return;
+//            }
+//
+//            LatLng currentLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+//            LatLng routeStart = points.get(0);
+//
+//            // Draw connector line (current → start)
+//            Polyline connector = mMap.addPolyline(new PolylineOptions()
+//                    .add(currentLatLng, routeStart)
+//                    .color(Color.RED)  // different color from route
+//                    .width(12f));
+//
+//            // Zoom camera to fit both route + connector
+//            LatLngBounds.Builder navBounds = new LatLngBounds.Builder();
+//            navBounds.include(currentLatLng);
+//            for (LatLng point : points) navBounds.include(point);
+//            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(navBounds.build(), 150));
+        });
+    }
+
+    private void clearSelection(List<Polyline> polylines) {
+        for (Polyline p : polylines) {
+            p.setWidth(10f);
+            p.setZIndex(1);
+        }
+
+        saveButton.setVisibility(View.GONE);
+        navButton.setVisibility(View.GONE);
+    }
+
+    private void enableMyLocation() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+
+            mMap.setMyLocationEnabled(true);
+        } else {
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_REQUEST_CODE
+            );
+        }
+    }
+
+//    @Override
+    public boolean onMyLocationButtonClick() {
+        Toast.makeText(this, "MyLocation button clicked", Toast.LENGTH_SHORT).show();
+        return false;
+    }
+
+//    @Override
+    public void onMyLocationClick(@NonNull Location location) {
+        Toast.makeText(this, "Current location:\n" + location, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                // Permission granted → enable location
+                enableMyLocation();
+            } else {
+                // Permission denied → show message or disable location features
+                Toast.makeText(this, "Location permission denied.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     private void geocodeAllPlaces(List<String> placeNames, String apiKey, OnAllGeocodedListener listener) {
         List<LatLng> results = new ArrayList<>();
 
@@ -158,6 +385,27 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
         }
 
         geocodeNextPlace(0, placeNames, results, apiKey, listener);
+    }
+
+    @Override
+    protected void onResumeFragments() {
+        super.onResumeFragments();
+        if (permissionDenied) {
+            // Permission was not granted, display error dialog.
+            showMissingPermissionError();
+            permissionDenied = false;
+        }
+    }
+
+    /**
+     * Displays a dialog with error message explaining that the location permission is missing.
+     */
+    private void showMissingPermissionError() {
+        new AlertDialog.Builder(this)
+                .setTitle("Permission Required")
+                .setMessage("Location permission is needed to show your current position on the map.")
+                .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                .show();
     }
 
     private void geocodeNextPlace(int index, List<String> placeNames, List<LatLng> results, String apiKey, OnAllGeocodedListener listener) {
