@@ -2,6 +2,7 @@ package com.example.cs465;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -47,6 +48,8 @@ public class RouteInputActivity extends AppCompatActivity {
         EditText distanceEdit = findViewById(R.id.distanceEditText);
 
         generateButton.setOnClickListener(v -> {
+            Log.d("debug", "test");
+            Log.d("debug", "start: " + startEdit.getText());
             String start = startEdit.getText().toString().trim();
             String end = endEdit.getText().toString().trim();
             List<String> intermediates = Arrays.asList(
@@ -57,10 +60,6 @@ public class RouteInputActivity extends AppCompatActivity {
             locationList.add(end);
 
             Intent intent = new Intent(RouteInputActivity.this, RouteGeneratorActivity.class);
-            /*
-            intent.putStringArrayListExtra("locationList", locationList);
-            startActivity(intent);*/
-
 
             String measure = (timeRadio.isChecked()) ? "time" : "distance";
             String distance = distanceEdit.getText().toString().trim();
