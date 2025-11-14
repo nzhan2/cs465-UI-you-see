@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content">
 
     <ImageView
         android:layout_width="match_parent"
@@ -70,8 +70,13 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="Enter distance in meters..."
+                    android:hint="Enter distance..."
                     android:inputType="numberDecimal"/>
+
+                <Spinner
+                    android:id="@+id/distanceUnitSpinner"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -87,11 +92,11 @@
                 android:text="that starts at:"
                 android:layout_marginTop="16dp"/>
 
-            <EditText
+            <AutoCompleteTextView
                 android:id="@+id/startEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Add start location"
+                android:hint="Search locations..."
                 android:inputType="text"/>
 
             <TextView
@@ -100,11 +105,11 @@
                 android:text="and ends at:"
                 android:layout_marginTop="8dp"/>
 
-            <EditText
+            <AutoCompleteTextView
                 android:id="@+id/endEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Add end location"
+                android:hint="Search locations..."
                 android:inputType="text"/>
 
             <TextView
@@ -113,12 +118,19 @@
                 android:text="with the following landmarks:"
                 android:layout_marginTop="16dp"/>
 
-            <EditText
+            <AutoCompleteTextView
                 android:id="@+id/landmarksEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Enter location in the form NAME CITY, NAME CITY"
+                android:hint="Search categories/landmarks"
                 android:inputType="text"/>
+
+            <Button
+                android:id="@+id/addLandmarkButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Add another landmark"
+                android:layout_marginTop="8dp"/>
 
             <Button
                 android:id="@+id/generateButton"
