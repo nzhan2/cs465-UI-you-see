@@ -26,6 +26,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class RouteGeneratorActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -47,7 +48,7 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
 
     private String start;
     private String end;
-    private ArrayList<String> intermediateLocations;
+    private ArrayList<String> intermediateLocations = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +69,11 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
         start = getIntent().getStringExtra("start");
         end = getIntent().getStringExtra("end");
 
+        /*start="Illini Union";
+        end="Foellinger Auditorium";*/
+
         intermediateLocations = getIntent().getStringArrayListExtra("intermediates");
+        //intermediateLocations.add("ARC Champaign");
 
         Button backButton = findViewById(R.id.backButton);
         backButton.setOnClickListener(v -> {
@@ -100,6 +105,7 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
         String destinationName = end;
 
         List<String> intermediaries = intermediateLocations;
+        Log.d("debug", "intermediaries size: " + intermediaries.size());
 
         RouteGeneratorActivityHelper.geocodePlace(originName, apiKey, originLatLng -> {
             RouteGeneratorActivityHelper.geocodePlace(destinationName, apiKey, destLatLng -> {
