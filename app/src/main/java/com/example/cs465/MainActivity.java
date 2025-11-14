@@ -2,8 +2,11 @@ package com.example.cs465;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.Button;
+import android.widget.RadioButton;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,7 +14,12 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,11 +36,53 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // Start route generation immediately
+        // Code for route input
+        //String[] locations = new String[] {"Illini Union", "Foellinger Auditorium", "ARC", "Altgeld", "CRCE"};
+
+        EditText startEdit = findViewById(R.id.startEditText);
+        EditText endEdit = findViewById(R.id.endEditText);
+        EditText landmarksEditText = findViewById(R.id.landmarksEditText);
+
+        // ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+        //         android.R.layout.simple_dropdown_item_1line, locations);
+
+       /* startEdit.setAdapter(adapter);
+        endEdit.setAdapter(adapter);
+        landmarksEditText.setAdapter(adapter);*/
+
+        // Optional: show suggestions after typing 1 character
+        /*startEdit.setThreshold(1);
+        endEdit.setThreshold(1);
+        landmarksEditText.setThreshold(1);*/
+
         Button generateButton = findViewById(R.id.generateButton);
-        generateButton.setOnClickListener(v ->
-                startActivity(new Intent(this, RouteSelectorActivity.class))
-        );
+        RadioButton timeRadio = findViewById(R.id.timeRadio);
+        EditText distanceEdit = findViewById(R.id.distanceEditText);
+
+        generateButton.setOnClickListener(v -> {
+            Log.d("debug", "test");
+            Log.d("debug", "start: " + startEdit.getText());
+            String start = startEdit.getText().toString().trim();
+            String end = endEdit.getText().toString().trim();
+            List<String> intermediates = Arrays.asList(
+                    landmarksEditText.getText().toString().trim().split("\\s*,\\s*"));
+            ArrayList<String> locationList = new ArrayList<>();
+            locationList.add(start);
+            locationList.addAll(intermediates);
+            locationList.add(end);
+
+            Intent intent = new Intent(MainActivity.this, RouteGeneratorActivity.class);
+
+            String measure = (timeRadio.isChecked()) ? "time" : "distance";
+            String distance = distanceEdit.getText().toString().trim();
+
+            intent.putExtra("start", start);
+            intent.putStringArrayListExtra("intermediates", new ArrayList<>(intermediates));
+            intent.putExtra("end", end);
+            intent.putExtra("measure", measure);
+            intent.putExtra("distance", distance);
+            startActivity(intent);
+        });
 
         // History button not fully functional with real route data
         LinearLayout historySection = findViewById(R.id.historySection);

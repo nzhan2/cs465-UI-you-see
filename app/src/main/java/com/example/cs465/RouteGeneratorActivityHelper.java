@@ -165,6 +165,7 @@ public class RouteGeneratorActivityHelper {
     }
 
     public static void geocodePlace(String placeName, String apiKey, GeocodeCallback callback) {
+        Log.d("debug", "geocodePlace: " + placeName);
         OkHttpClient client = new OkHttpClient();
         String url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + placeName.replace(" ", "+") + "&key=" + apiKey;
         Request request = new Request.Builder().url(url).build();

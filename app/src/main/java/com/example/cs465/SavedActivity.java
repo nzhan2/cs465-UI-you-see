@@ -1,8 +1,8 @@
 package com.example.cs465;
 
-import android.content.Intent;       // ✅ Import for navigation
+import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;        // ✅ Import for the Button view
+import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
 
