@@ -4,7 +4,9 @@ import static android.graphics.Color.argb;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -46,6 +48,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
+
+
+
 public class RouteGeneratorActivity extends FragmentActivity  implements OnMapReadyCallback,
         GoogleMap.OnMyLocationButtonClickListener,
         GoogleMap.OnMyLocationClickListener {
@@ -58,6 +66,10 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
     String apiKey;
 
     private List<LatLng> savedIntermediaryLatLngs = new ArrayList<>();
+
+    private List<LatLng> selectedRoutePoints = null;
+    private LatLng selectedStart = null;
+    private LatLng selectedEnd = null;
 
     interface OnAllGeocodedListener {
         void onAllGeocoded(List<LatLng> allLatLngs);
@@ -111,7 +123,89 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         saveButton.setVisibility(View.GONE);
         navButton.setVisibility(View.GONE);
 
+        saveButton.setOnClickListener(v -> {
+            if (selectedRoutePoints == null || selectedStart == null || selectedEnd == null) {
+                Toast.makeText(this, "Route not fully defined", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
+//            String routeName = "Route " + System.currentTimeMillis(); // replace with user input if needed
+
+            SharedPreferences prefs = getSharedPreferences("routes", MODE_PRIVATE);
+            Gson gson = new Gson();
+
+            // Load existing saved routes
+            String existingJson = prefs.getString("saved_routes_list", null);
+            ArrayList<SavedRoute> savedRoutes;
+            if (existingJson != null) {
+                Type listType = new TypeToken<ArrayList<SavedRoute>>(){}.getType();
+                savedRoutes = gson.fromJson(existingJson, listType);
+            } else {
+                savedRoutes = new ArrayList<>();
+            }
+            // Determine next route number
+            int routeNumber = savedRoutes.size() + 1;
+            String routeName = "Route " + routeNumber;
+
+// Save current timestamp instead of route info
+            long timestamp = System.currentTimeMillis();
+            SavedRoute newRoute = new SavedRoute(
+                    routeName,
+                    new ArrayList<>(selectedRoutePoints),
+                    selectedStart,
+                    selectedEnd,
+                    savedIntermediaryLatLngs
+            );
+            // Add the new route
+            savedRoutes.add(newRoute);
+
+            // Save back to SharedPreferences
+            prefs.edit().putString("saved_routes_list", gson.toJson(savedRoutes)).apply();
+
+            Toast.makeText(this, "Route saved!", Toast.LENGTH_SHORT).show();
+        });
+
+//        saveButton.setOnClickListener(v -> {
+//            LatLng currentLatLng = null;
+//            Location myLocation = mMap.getMyLocation();
+//            if (myLocation != null) {
+//                currentLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+//            } else {
+//                Toast.makeText(this, "Current location not available", Toast.LENGTH_SHORT).show();
+//                return;
+//            }
+//
+//            if (selectedRoutePoints == null) {
+//                Toast.makeText(this, "No route selected", Toast.LENGTH_SHORT).show();
+//                return;
+//            }
+//
+//            // Build saved route
+//            SavedRoute route = new SavedRoute(
+//                    "Route from " + start + " to " + end,
+//                    selectedRoutePoints,
+//                    selectedStart,
+//                    selectedEnd,
+//                    savedIntermediaryLatLngs
+//            );
+//
+//            RouteStorage.saveRoute(RouteGeneratorActivity.this, route);
+//            Toast.makeText(this, "Route saved!", Toast.LENGTH_SHORT).show();
+//
+//            SharedPreferences prefs = getSharedPreferences("routes", MODE_PRIVATE);
+//            SharedPreferences.Editor edit = prefs.edit();
+//
+//            String routeJson = new Gson().toJson(selectedRoutePoints);
+//            long timestamp = System.currentTimeMillis();
+//
+//            edit.putString("route_points", routeJson);
+//            edit.putString("userLocation", new Gson().toJson(currentLatLng));
+//            edit.putLong("route_timestamp", timestamp);
+//            edit.apply();
+//
+//        });
+//
+//
     }
 
     @Override
@@ -229,7 +323,12 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
             }
         }
 
-        // Zoom camera to selected route
+        // save route
+        selectedRoutePoints = new ArrayList<>(polylines.get(selectedIndex).getPoints());
+        selectedStart = selectedRoutePoints.get(0);
+        selectedEnd = selectedRoutePoints.get(selectedRoutePoints.size() - 1);
+
+
         List<LatLng> points = polylines.get(selectedIndex).getPoints();
         LatLngBounds.Builder builder = new LatLngBounds.Builder();
         for (LatLng point : points) builder.include(point);
@@ -292,6 +391,8 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
             intent.putExtra("landmark1", landmark1);
             intent.putExtra("landmark2", landmark2);
             startActivity(intent);
+
+
 
 //            Intent intent = new Intent(RouteGeneratorActivity.this, NavigationActivity.class);
 //            intent.putParcelableArrayListExtra("routePoints", (ArrayList<? extends Parcelable>) points); // selected route
@@ -422,3 +523,4 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         });
     }
 }
+
