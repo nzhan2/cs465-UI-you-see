@@ -105,7 +105,6 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
         String destinationName = end;
 
         List<String> intermediaries = intermediateLocations;
-        Log.d("debug", "intermediaries size: " + intermediaries.size());
 
         RouteGeneratorActivityHelper.geocodePlace(originName, apiKey, originLatLng -> {
             RouteGeneratorActivityHelper.geocodePlace(destinationName, apiKey, destLatLng -> {
@@ -114,7 +113,6 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
                         StringBuilder infoBuilder = new StringBuilder();
 
                         for (int i = 0; i < routes.size(); i++) {
-                            Log.d("debug", "drawing a route");
                             RouteInfo route = routes.get(i);
                             int color = routeColors[i % routeColors.length];
 
@@ -135,9 +133,6 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
 
                         LatLngBounds bounds = builder.build();
                         mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
-                        mMap.setOnPolylineClickListener(polyline ->
-                                Log.d("Map", "Clicked " + polyline.getTag())
-                        );
                     });
                 });
             });
@@ -167,7 +162,6 @@ public class RouteGeneratorActivity extends FragmentActivity implements OnMapRea
         }
 
         String name = placeNames.get(index);
-        Log.d("Test", "name: " + name);
         RouteGeneratorActivityHelper.geocodePlace(name, apiKey, latLng -> {
             results.add(latLng);
             geocodeNextPlace(index + 1, placeNames, results, apiKey, listener);
