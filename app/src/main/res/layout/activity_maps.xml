@@ -58,14 +58,30 @@
                 android:visibility="gone"/>
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/routeInfoTextView"
+<!--        <TextView-->
+<!--            android:id="@+id/routeInfoTextView"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:background="@color/white"-->
+<!--            android:layout_gravity="bottom"-->
+<!--            android:textColor="@color/black"-->
+<!--            android:text="Temporary text">-->
+<!--        </TextView>-->
+
+        <ScrollView
+            android:id="@+id/routeInfoScrollView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/white"
             android:layout_gravity="bottom"
-            android:textColor="@color/black"
-            android:text="Temporary text">
-        </TextView>
+            android:background="@color/white"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:id="@+id/routeInfoContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
     </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

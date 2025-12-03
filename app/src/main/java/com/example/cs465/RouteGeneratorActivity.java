@@ -8,19 +8,28 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.location.Location;
 import android.os.Bundle;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Polyline;
@@ -35,9 +44,12 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -46,12 +58,14 @@ import org.jspecify.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
-
+import java.util.Map;
 
 
 public class RouteGeneratorActivity extends FragmentActivity  implements OnMapReadyCallback,
@@ -61,6 +75,9 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
     private Button saveButton;
     private Button navButton;
+
+    private Button popupSaveButton;
+    private Button popupNavButton;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
     private boolean permissionDenied = false;
     String apiKey;
@@ -71,18 +88,27 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
     private LatLng selectedStart = null;
     private LatLng selectedEnd = null;
 
+    private Map<String, Integer> landmarkImageMap = new HashMap<String, Integer>() {{
+        put("ARC 1", R.drawable.arc_1);
+        put("ARC 2", R.drawable.arc_2);
+        put("CRCE 1", R.drawable.crce_1);
+        put("CRCE 2", R.drawable.crce_2);
+        put("default", R.drawable.alma);
+    }};
+
+
     interface OnAllGeocodedListener {
         void onAllGeocoded(List<LatLng> allLatLngs);
     }
     int[] routeColors = {
-            Color.BLUE,
-            Color.RED,
-            Color.GREEN,
-            Color.MAGENTA,
-            Color.CYAN
+            Color.parseColor("#0f69fa"),
+            Color.parseColor("#cf4e3a"),
+            Color.parseColor("#6abd62"),
+            Color.parseColor("#7965d6"), // soft purple
+            Color.parseColor("#8FD0C6")  // soft teal
     };
 
-    private TextView routeInfoTextView;
+    private ScrollView routeInfoTextView;
 
     private String start;
     private String end;
@@ -92,7 +118,7 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-        routeInfoTextView = findViewById(R.id.routeInfoTextView);
+        routeInfoTextView = findViewById(R.id.routeInfoScrollView);
 
         try {
             ApplicationInfo appInfo = getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA);
@@ -283,9 +309,165 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
                             );
                         }
 
-                        routeInfoTextView.setText(infoBuilder.toString());
-                        routeInfoTextView.setMovementMethod(LinkMovementMethod.getInstance());
-                        routeInfoTextView.setText(infoBuilder);
+                        mMap.addMarker(new MarkerOptions()
+                                .position(originLatLng)
+                                .title("Start: " + start)
+                                .icon(getPinMarker("#6abd62", "S")) //green
+                        );
+
+                        mMap.addMarker(new MarkerOptions()
+                                .position(destLatLng)
+                                .title("End: " + end)
+                                .icon(getPinMarker("#cf4e3a", "E")) //red
+//                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                        );
+
+//                        for (int i = 0; i < intermediaryLatLngs.size(); i++) {
+//                            LatLng stopLatLng = intermediaryLatLngs.get(i);
+//                            String stopName = intermediaries.get(i);
+//
+//                            mMap.addMarker(new MarkerOptions()
+//                                            .position(stopLatLng)
+//                                            .title(stopName)          // The name the user entered
+//                                            .snippet("Stop " + (i + 1))  // optional: a snippet or description
+//                                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE))               // optional: set a custom marker icon here
+//                            );
+//                        }
+
+                        for (int i = 0; i < intermediaryLatLngs.size(); i++) {
+                            LatLng stopLatLng = intermediaryLatLngs.get(i);
+                            String stopName = intermediaries.get(i);
+
+                            mMap.addMarker(new MarkerOptions()
+                                    .position(stopLatLng)
+                                    .title("Stop " + (i + 1) + ": " + stopName)
+                                    .icon(createNumberedMarker(this, i + 1, "#0f69fa"))
+                            );
+                        }
+
+
+//                        routeInfoTextView.setText(infoBuilder.toString());
+//                        routeInfoTextView.setMovementMethod(LinkMovementMethod.getInstance());
+//                        routeInfoTextView.setText(infoBuilder);
+
+                        LinearLayout container = findViewById(R.id.routeInfoContainer);
+                        container.removeAllViews();
+
+                        for (int i = 0; i < routes.size(); i++) {
+
+                            RouteInfo route = routes.get(i);
+                            int color = routeColors[i % routeColors.length];
+
+//
+
+                            TextView routeItem = new TextView(this);
+
+// --- TEXT ---
+                            routeItem.setText("Route " + (i + 1));
+                            routeItem.setTextSize(18);
+                            routeItem.setTextColor(Color.WHITE);
+                            routeItem.setGravity(Gravity.CENTER);
+
+// --- APPEARANCE ---
+                            routeItem.setPadding(40, 40, 40, 40);
+                            GradientDrawable bg = new GradientDrawable();
+                            bg.setColor(color);
+                            bg.setCornerRadius(40f);
+                            routeItem.setBackground(bg);
+
+                            routeItem.setElevation(6f);
+
+// Layout params (full width, margin)
+                            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT
+                            );
+                            params.setMargins(0, 20, 0, 20);
+                            routeItem.setLayoutParams(params);
+
+// Click behavior
+                            final int index = i;
+                            routeItem.setOnClickListener(v -> { selectRoute(index, polylines);
+                                showRouteDetailsPopup(
+                                    "Route " + (index + 1),
+                                    route.distanceText,
+                                    route.durationText,
+                                        () -> {
+                                            if (selectedRoutePoints == null || selectedStart == null || selectedEnd == null) {
+                                                Toast.makeText(this, "Route not fully defined", Toast.LENGTH_SHORT).show();
+                                                return;
+                                            }
+
+                                            SharedPreferences prefs = getSharedPreferences("routes", MODE_PRIVATE);
+                                            Gson gson = new Gson();
+
+                                            // Load existing saved routes
+                                            String existingJson = prefs.getString("saved_routes_list", null);
+                                            ArrayList<SavedRoute> savedRoutes;
+                                            if (existingJson != null) {
+                                                Type listType = new TypeToken<ArrayList<SavedRoute>>(){}.getType();
+                                                savedRoutes = gson.fromJson(existingJson, listType);
+                                            } else {
+                                                savedRoutes = new ArrayList<>();
+                                            }
+                                            // Determine next route number
+                                            int routeNumber = savedRoutes.size() + 1;
+                                            String routeName = "Route " + routeNumber;
+
+                                            long timestamp = System.currentTimeMillis();
+                                            SavedRoute newRoute = new SavedRoute(
+                                                    routeName,
+                                                    new ArrayList<>(selectedRoutePoints),
+                                                    selectedStart,
+                                                    selectedEnd,
+                                                    savedIntermediaryLatLngs
+                                            );
+                                            // Add the new route
+                                            savedRoutes.add(newRoute);
+
+                                            // Save back to SharedPreferences
+                                            prefs.edit().putString("saved_routes_list", gson.toJson(savedRoutes)).apply();
+
+                                            Toast.makeText(this, "Route saved!", Toast.LENGTH_SHORT).show();
+                                        },
+
+                                        // NAVIGATE pressed
+                                        () -> {
+                                            List<LatLng> points = polylines.get(index).getPoints();
+                                            LatLngBounds.Builder builder = new LatLngBounds.Builder();
+                                            for (LatLng point : points) builder.include(point);
+
+                                            Location myLocation = mMap.getMyLocation();
+                                            if (myLocation == null) {
+                                                Toast.makeText(this, "Current location not available", Toast.LENGTH_SHORT).show();
+                                                return;
+                                            }
+
+                                            LatLng currentLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+
+                                            LatLng routeStart = points.get(0);
+                                            LatLng routeEnd = points.get(points.size() - 1);
+
+                                            ArrayList<String> intermediaryLatLings = getIntent().getStringArrayListExtra("intermediates");
+
+                                            LatLng landmark1 = savedIntermediaryLatLngs.size() > 0 ? savedIntermediaryLatLngs.get(0) : null;
+                                            LatLng landmark2 = savedIntermediaryLatLngs.size() > 1 ? savedIntermediaryLatLngs.get(1) : null;
+
+
+                                            Intent intent = new Intent(RouteGeneratorActivity.this, NavigationActivity.class);
+                                            intent.putParcelableArrayListExtra("routePoints", new ArrayList<>(points));
+                                            intent.putExtra("userLocation", currentLatLng);
+                                            intent.putExtra("startPoint", routeStart);
+                                            intent.putExtra("endPoint", routeEnd);
+                                            intent.putExtra("landmark1", landmark1);
+                                            intent.putExtra("landmark2", landmark2);
+                                            startActivity(intent);
+                                        }
+                            ); });
+
+                            container.addView(routeItem);
+                        }
+
 
                         LatLngBounds.Builder builder = new LatLngBounds.Builder();
                         for (LatLng point: routes.get(0).path) {
@@ -308,16 +490,89 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
     }
 
+    private BitmapDescriptor getPinMarker(String hexColor, String text) {
+        int color = Color.parseColor(hexColor);
+
+        int width = 120;
+        int height = 160;
+        int size = 100;
+
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        Paint paint = new Paint();
+        paint.setColor(color);
+        paint.setAntiAlias(true);
+
+        Paint textPaint = new Paint();
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(50f);
+        textPaint.setFakeBoldText(true);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setAntiAlias(true);
+
+        // Draw circle head
+//        canvas.drawCircle(width / 2f, width / 2f, width / 2.5f, paint);
+        float circleCenter = width / 2f;
+        float circleRadius = width / 2.8f;   // slightly smaller, looks better
+        canvas.drawCircle(circleCenter, circleCenter, circleRadius, paint);
+
+        // Draw triangle body
+        Path triangle = new Path();
+        float triangleTopY = circleCenter;   // raised up
+        float triangleBottomY = height * 0.92f;                   // bottom tip
+
+        triangle.moveTo(circleCenter, triangleBottomY);                // tip
+        triangle.lineTo(circleCenter - circleRadius * 0.9f, triangleTopY);  // left
+        triangle.lineTo(circleCenter + circleRadius * 0.9f, triangleTopY);  // right
+        triangle.close();
+
+        canvas.drawPath(triangle, paint);
+
+        Paint.FontMetrics fm = textPaint.getFontMetrics();
+        float textY = width / 2f - (fm.ascent + fm.descent) / 2f;
+        canvas.drawText(text, width / 2f, textY, textPaint);
+
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
+    }
+
+    private BitmapDescriptor createNumberedMarker(Context context, int number, String hexColor) {
+        int size = 100;  // marker image size
+
+        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        Paint circlePaint = new Paint();
+        circlePaint.setColor(Color.parseColor(hexColor));
+        circlePaint.setAntiAlias(true);
+
+        Paint textPaint = new Paint();
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextSize(50f);
+        textPaint.setFakeBoldText(true);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setAntiAlias(true);
+
+        // Draw circle (marker background)
+        canvas.drawCircle(size / 2f, size / 2f, size / 2.3f, circlePaint);
+
+        // Draw number in center
+        Paint.FontMetrics fm = textPaint.getFontMetrics();
+        float textY = size / 2f - (fm.ascent + fm.descent) / 2f;
+        canvas.drawText(String.valueOf(number), size / 2f, textY, textPaint);
+
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
+    }
+
+
     private void selectRoute(int selectedIndex, List<Polyline> polylines) {
         for (int i = 0; i < polylines.size(); i++) {
             Polyline p = polylines.get(i);
 
             if (i == selectedIndex) {
-                // Highlight selected route
-                p.setWidth(20f);       // thicker line
-                p.setZIndex(10);       // bring forward
+                p.setWidth(20f);
+                p.setZIndex(10);
             } else {
-                // Normal line — NOT greyed out
                 p.setWidth(10f);
                 p.setZIndex(1);
             }
@@ -352,33 +607,6 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
             ArrayList<String> intermediaryLatLings = getIntent().getStringArrayListExtra("intermediates");
 
-
-//            List<LatLng> intermediaryLatLngs = new ArrayList<>();
-//
-//            if (intermediaryLatLings != null) {
-//                for (String s : intermediaryLatLings) {
-////                    String[] parts = s.split(",");
-////                    double lat = Double.parseDouble(parts[0]);
-////                    double lng = Double.parseDouble(parts[1]);
-////                    intermediaryLatLngs.add(new LatLng(lat, lng));
-//                    if (!s.contains(",")) {
-//                        Log.e("ROUTE", "Skipping non-coordinate string: " + s);
-//                        continue;
-//                    }
-//
-//                    try {
-//                        String[] parts = s.split(",");
-//                        double lat = Double.parseDouble(parts[0]);
-//                        double lng = Double.parseDouble(parts[1]);
-//                        intermediaryLatLngs.add(new LatLng(lat, lng));
-//                    } catch (NumberFormatException e) {
-//                        Log.e("ROUTE", "Invalid coordinate format: " + s);
-//                    }
-//                }
-//            }
-
-//            LatLng landmark1 = intermediaryLatLngs.size() > 0 ? intermediaryLatLngs.get(0) : null;
-//            LatLng landmark2 = intermediaryLatLngs.size() > 1 ? intermediaryLatLngs.get(1) : null;
             LatLng landmark1 = savedIntermediaryLatLngs.size() > 0 ? savedIntermediaryLatLngs.get(0) : null;
             LatLng landmark2 = savedIntermediaryLatLngs.size() > 1 ? savedIntermediaryLatLngs.get(1) : null;
 
@@ -391,34 +619,6 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
             intent.putExtra("landmark1", landmark1);
             intent.putExtra("landmark2", landmark2);
             startActivity(intent);
-
-
-
-//            Intent intent = new Intent(RouteGeneratorActivity.this, NavigationActivity.class);
-//            intent.putParcelableArrayListExtra("routePoints", (ArrayList<? extends Parcelable>) points); // selected route
-//            intent.putExtra("userLocation", currentLatLng); // current location
-//            startActivity(intent);
-
-//            Location myLocation = mMap.getMyLocation();
-//            if (myLocation == null) {
-//                Toast.makeText(this, "Current location not available", Toast.LENGTH_SHORT).show();
-//                return;
-//            }
-//
-//            LatLng currentLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
-//            LatLng routeStart = points.get(0);
-//
-//            // Draw connector line (current → start)
-//            Polyline connector = mMap.addPolyline(new PolylineOptions()
-//                    .add(currentLatLng, routeStart)
-//                    .color(Color.RED)  // different color from route
-//                    .width(12f));
-//
-//            // Zoom camera to fit both route + connector
-//            LatLngBounds.Builder navBounds = new LatLngBounds.Builder();
-//            navBounds.include(currentLatLng);
-//            for (LatLng point : points) navBounds.include(point);
-//            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(navBounds.build(), 150));
         });
     }
 
@@ -522,5 +722,90 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
             geocodeNextPlace(index + 1, placeNames, results, apiKey, listener);
         });
     }
+
+    private void showRouteDetailsPopup(String title, String distance, String duration,  Runnable onSavePressed, Runnable onNavigatePressed) {
+
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.route_details_popup, null);
+
+        TextView titleView = view.findViewById(R.id.routeTitle);
+        TextView distanceView = view.findViewById(R.id.routeDistance);
+        TextView durationView = view.findViewById(R.id.routeDuration);
+
+        titleView.setText(title);
+        distanceView.setText("Distance: " + distance);
+        durationView.setText("Duration: " + duration);
+
+//        ViewPager2 gallery = view.findViewById(R.id.imageGallery);
+//
+//        List<Integer> galleryImages = new ArrayList<>();
+//
+//        galleryImages.add(
+//                landmarkImageMap.getOrDefault("ARC 1", landmarkImageMap.get("default"))
+//        );
+//        galleryImages.add(
+//                landmarkImageMap.getOrDefault("ARC 2", landmarkImageMap.get("default"))
+//
+//        );
+//
+//
+//        gallery.setAdapter(new ImageGalleryAdapter(this, galleryImages));
+
+        LinearLayout galleryContainer = view.findViewById(R.id.stopGalleryContainer);
+        galleryContainer.removeAllViews();
+
+        // For each stop, add a header + gallery
+        for (int i = 0; i < intermediateLocations.size(); i++) {
+            String stopName = intermediateLocations.get(i);
+
+            // Header for stop
+            TextView stopHeader = new TextView(this);
+            stopHeader.setText("Stop " + (i + 1) + ": " + stopName);
+            stopHeader.setTextSize(16f);
+            stopHeader.setTextColor(Color.BLACK);
+            stopHeader.setPadding(0, 16, 0, 8);
+            stopHeader.setTypeface(null, Typeface.BOLD);
+            galleryContainer.addView(stopHeader);
+
+            // Gallery for stop
+            ViewPager2 gallery = new ViewPager2(this);
+            gallery.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    200
+            ));
+
+            // Get images for this stop, or default if none
+            List<Integer> galleryImages = new ArrayList<>();
+//            String key = stopName; // or map your stops to specific images
+            if (i == 0) {
+                galleryImages.add(landmarkImageMap.getOrDefault("CRCE 1", landmarkImageMap.get("default")));
+                galleryImages.add(landmarkImageMap.getOrDefault("CRCE 2", landmarkImageMap.get("default")));
+            } else {
+                galleryImages.add(landmarkImageMap.getOrDefault("ARC 1", landmarkImageMap.get("default")));
+                galleryImages.add(landmarkImageMap.getOrDefault("ARC 2", landmarkImageMap.get("default")));
+            }
+
+            gallery.setAdapter(new ImageGalleryAdapter(this, galleryImages));
+
+            galleryContainer.addView(gallery);
+        }
+
+        popupSaveButton = view.findViewById(R.id.popupSaveButton);
+        popupNavButton = view.findViewById(R.id.popupNavButton);
+
+        popupSaveButton.setOnClickListener(v -> {
+            dialog.dismiss();
+            onSavePressed.run();
+        });
+
+        popupNavButton.setOnClickListener(v -> {
+            dialog.dismiss();
+            onNavigatePressed.run();
+        });
+
+        dialog.setContentView(view);
+        dialog.show();
+    }
+
 }
 
