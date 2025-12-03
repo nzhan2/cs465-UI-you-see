@@ -38,6 +38,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,6 +49,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
@@ -118,6 +120,24 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
             finish(); // returns to MainActivity (the previous screen)
         });
 
+        LinearLayout bottomSheet = findViewById(R.id.bottomSheet);
+        BottomSheetBehavior<LinearLayout> sheetBehavior = BottomSheetBehavior.from(bottomSheet);
+
+        sheetBehavior.setPeekHeight(220);
+        sheetBehavior.setHideable(false);
+        sheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+        sheetBehavior.addBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+            @Override
+            public void onStateChanged(@NonNull View bottomSheet, int newState) {
+
+            }
+
+            @Override
+            public void onSlide(@NonNull View bottomSheet, float slideOffset) {
+
+            }
+        });
+
         saveButton = findViewById(R.id.saveButton);
         navButton = findViewById(R.id.navButton);
         saveButton.setVisibility(View.GONE);
@@ -164,6 +184,7 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
             Toast.makeText(this, "Route saved!", Toast.LENGTH_SHORT).show();
         });
+
 
 //        saveButton.setOnClickListener(v -> {
 //            LatLng currentLatLng = null;
@@ -237,7 +258,6 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         String destinationName = end;
 
         List<String> intermediaries = intermediateLocations;
-        Log.d("debug", "intermediaries size: " + intermediaries.size());
 
         RouteGeneratorActivityHelper.geocodePlace(originName, apiKey, originLatLng -> {
             RouteGeneratorActivityHelper.geocodePlace(destinationName, apiKey, destLatLng -> {
@@ -294,9 +314,6 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
                         LatLngBounds bounds = builder.build();
                         mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
-                        mMap.setOnPolylineClickListener(polyline ->
-                                Log.d("Map", "Clicked " + polyline.getTag())
-                        );
                     });
                 });
             });
@@ -516,7 +533,6 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         }
 
         String name = placeNames.get(index);
-        Log.d("Test", "name: " + name);
         RouteGeneratorActivityHelper.geocodePlace(name, apiKey, latLng -> {
             results.add(latLng);
             geocodeNextPlace(index + 1, placeNames, results, apiKey, listener);
