@@ -66,7 +66,12 @@ public class RouteGeneratorActivityHelper {
                                 new android.app.AlertDialog.Builder(context)
                                         .setTitle("No Routes Found Within Time/Distance Constraints")
                                         .setMessage(message)
-                                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                                        .setPositiveButton("OK", (dialog, which) -> {
+                                            dialog.dismiss();
+                                            if (context instanceof android.app.Activity) {
+                                                ((android.app.Activity) context).finish();
+                                            }
+                                        })
                                         .show();
                             } else {
                                 routesCallback.onRoutesFetched(allRoutes);
