@@ -65,6 +65,20 @@ public class MainActivity extends AppCompatActivity {
         Button generateButton = findViewById(R.id.generateButton);
         RadioButton timeRadio = findViewById(R.id.timeRadio);
         RadioButton distanceRadio = findViewById(R.id.distanceRadio);
+        TextView longRouteText = findViewById(R.id.longRouteText);
+
+        timeRadio.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                longRouteText.setText("min long route");
+            }
+        });
+
+        distanceRadio.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                longRouteText.setText("km long route");
+            }
+        });
+
         EditText distanceEdit = findViewById(R.id.constraintValueInput);
 
         generateButton.setOnClickListener(v -> {
