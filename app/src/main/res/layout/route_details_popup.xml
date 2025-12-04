@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center_horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/routeTitle"
+        android:text="Route Details"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:paddingBottom="12dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+
+    <!-- Distance -->
+    <TextView
+        android:id="@+id/routeDistance"
+        android:text="Distance:"
+        android:textSize="16sp"
+        android:paddingBottom="4dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <!-- Duration -->
+    <TextView
+        android:id="@+id/routeDuration"
+        android:text="Duration:"
+        android:textSize="16sp"
+        android:paddingBottom="20dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+
+<!--    <androidx.viewpager2.widget.ViewPager2-->
+<!--        android:id="@+id/imageGallery"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="200dp"-->
+<!--        android:layout_marginTop="8dp"-->
+<!--        android:orientation="horizontal"/>-->
+
+    <LinearLayout
+        android:id="@+id/stopGalleryContainer"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+
+    <!-- SAVE Button -->
+    <Button
+        android:id="@+id/popupSaveButton"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:text="Save"
+        android:textColor="@android:color/black"
+        android:backgroundTint="@color/white"
+        android:layout_gravity="center_horizontal"
+        android:elevation="6dp"
+        android:padding="12dp"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- NAVIGATE Button -->
+    <Button
+        android:id="@+id/popupNavButton"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:text="Navigate"
+        android:textColor="@android:color/black"
+        android:backgroundTint="@color/white"
+        android:layout_gravity="center_horizontal"
+        android:elevation="6dp"
+        android:padding="12dp"/>
+
+</LinearLayout>
