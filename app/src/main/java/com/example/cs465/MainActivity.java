@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
         Button generateButton = findViewById(R.id.generateButton);
         RadioButton timeRadio = findViewById(R.id.timeRadio);
-        EditText distanceEdit = findViewById(R.id.distanceEditText);
+        EditText distanceEdit = findViewById(R.id.constraintValueInput);
 
         generateButton.setOnClickListener(v -> {
             Log.d("debug", "test");

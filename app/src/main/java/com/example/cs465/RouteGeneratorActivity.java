@@ -48,7 +48,9 @@ import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -112,6 +114,8 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
     private String start;
     private String end;
+    private String measure;
+    private String value;
     private ArrayList<String> intermediateLocations = new ArrayList<>();
 
     @Override
@@ -132,6 +136,8 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
         start = getIntent().getStringExtra("start");
         end = getIntent().getStringExtra("end");
+        measure = getIntent().getStringExtra("measure");
+        value = getIntent().getStringExtra("value");
 
         /*start="Illini Union";
         end="Foellinger Auditorium";*/
@@ -265,10 +271,30 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         List<String> intermediaries = intermediateLocations;
         Log.d("debug", "intermediaries size: " + intermediaries.size());
 
+        EditText constraintValueInput = findViewById(R.id.constraintValueInput);
+
+        String constraintType = "distance"; // default
+        if (measure.equals("distance")) {
+            constraintType = "distance";
+        } else if (measure.equals("time")) {
+            constraintType = "time";
+        }
+
+        double constraintValue = 0;
+        try {
+            constraintValue = Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Enter a valid number", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final String finalConstraintType = constraintType;
+        final double finalConstraintValue = constraintValue;
+
         RouteGeneratorActivityHelper.geocodePlace(originName, apiKey, originLatLng -> {
             RouteGeneratorActivityHelper.geocodePlace(destinationName, apiKey, destLatLng -> {
                 geocodeAllPlaces(intermediaries, apiKey, intermediaryLatLngs -> {
-                    RouteGeneratorActivityHelper.getRoutes(originLatLng, destLatLng, intermediaryLatLngs, apiKey, routes -> {
+                    RouteGeneratorActivityHelper.getRoutes(originLatLng, destLatLng, intermediaryLatLngs, apiKey, finalConstraintType, finalConstraintValue, RouteGeneratorActivity.this, routes -> {
 //                        StringBuilder infoBuilder = new StringBuilder();
                         SpannableStringBuilder infoBuilder = new SpannableStringBuilder();
                         savedIntermediaryLatLngs = intermediaryLatLngs;

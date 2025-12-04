@@ -19,6 +19,8 @@ import okhttp3.Callback;
 import okhttp3.Request;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
+import android.content.Context;
+
 
 public class RouteGeneratorActivityHelper {
     public interface RoutesCallback {
@@ -29,9 +31,9 @@ public class RouteGeneratorActivityHelper {
         void onGeocoded(LatLng latLng);
     }
 
-    public static void getRoutes(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, RoutesCallback routesCallback) {
+    public static void getRoutes(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, String constraintType, double constraintValue, Context context, RoutesCallback routesCallback) {
         if (intermediaries == null || intermediaries.isEmpty()) {
-            getSingleRoute(origin, destination, null, apiKey, routesCallback);
+            getSingleRoute(origin, destination, null, apiKey, constraintType, constraintValue, context, routesCallback);
             return;
         }
 
@@ -42,7 +44,7 @@ public class RouteGeneratorActivityHelper {
         final int[] completed = {0};
 
         for (List<LatLng> midPoints: permutations) {
-            getSingleRoute(origin, destination, midPoints, apiKey, singleRoute -> {
+            getSingleRoute(origin, destination, midPoints, apiKey, constraintType, constraintValue, context, singleRoute -> {
                 synchronized (allRoutes) {
                     if (!singleRoute.isEmpty()) {
                         allRoutes.addAll(singleRoute);
@@ -75,7 +77,7 @@ public class RouteGeneratorActivityHelper {
         }
     }
 
-    private static void getSingleRoute(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, RoutesCallback routesCallback) {
+    private static void getSingleRoute(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, String constraintType, double constraintValue, Context context, RoutesCallback routesCallback) {
         OkHttpClient client = new OkHttpClient();
 
         String url = "https://routes.googleapis.com/directions/v2:computeRoutes?key=" + apiKey;
@@ -137,6 +139,8 @@ public class RouteGeneratorActivityHelper {
                 String jsonData = response.body().string();
                 Log.d("RouteHelper", "Routes API response: " + jsonData);
                 List<RouteInfo> routeInfos = new ArrayList<>();
+                RouteInfo closestRoute = null;
+                double minDifference = Double.MAX_VALUE;
 
                 try {
                     JSONObject jsonObject = new JSONObject(jsonData);
@@ -149,20 +153,76 @@ public class RouteGeneratorActivityHelper {
                         double distanceMeters = route.optDouble("distanceMeters", 0);
                         double durationSeconds = Double.parseDouble(route.optString("duration").replace("s", ""));
 
-                        String distanceText = String.format("%.1f km", distanceMeters / 1000.0);
-                        int durationMinutes = (int) Math.ceil(durationSeconds / 60.0);
-                        String durationText = durationMinutes + "min";
+                        double distanceKm = distanceMeters / 1000.0;
+                        double durationMinutes = durationSeconds / 60.0;
 
-                        List<LatLng> decodePath = PolyUtil.decode(polyline);
-                        routeInfos.add(new RouteInfo(decodePath, distanceText, durationText));
+                        // fixing time / distance inputs
+
+                        boolean passes = true;
+                        double diff = 0;
+
+                        if ("distance".equals(constraintType)) {
+                            passes = distanceKm <= (constraintValue + 1.0);
+                            diff = Math.abs(distanceKm - constraintValue);
+                        } else if ("time".equals(constraintType)) {
+                            passes = durationMinutes <= (constraintValue + 20.0);
+                            diff = Math.abs(durationMinutes - constraintValue);
+                        }
+
+                        if (diff < minDifference) {
+                            minDifference = diff;
+                            closestRoute = new RouteInfo(PolyUtil.decode(polyline),
+                                    String.format("%.1f km", distanceKm),
+                                    (int)Math.ceil(durationMinutes) + " min");
+                        }
+                        if (passes) {
+                            List<LatLng> decodePath = PolyUtil.decode(polyline);
+                            String distanceText = String.format("%.1f km", distanceKm);
+                            String durationText = (int)Math.ceil(durationMinutes) + " min";
+                            routeInfos.add(new RouteInfo(decodePath, distanceText, durationText));
+                        }
+//                        String distanceText = String.format("%.1f km", distanceKm);
+//                        String durationText = durationMinutes + "min";
+
+//                        List<LatLng> decodePath = PolyUtil.decode(polyline);
+//                        routeInfos.add(new RouteInfo(decodePath, distanceText, durationText));
                     }
-                    new Handler(Looper.getMainLooper()).post(() -> routesCallback.onRoutesFetched(routeInfos));
+                    final RouteInfo finalClosest = closestRoute;
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        // Show popup if no routes pass tolerance
+                        if (routeInfos.isEmpty() && finalClosest != null) {
+                            String message;
+                            if ("distance".equals(constraintType)) {
+                                message = "No routes are within your +1 km tolerance.\n" +
+                                        "Closest route distance: " + finalClosest.distanceText;
+                            } else {
+                                message = "No routes are within your +20 min tolerance.\n" +
+                                        "Closest route duration: " + finalClosest.durationText;
+                            }
+
+                            new android.app.AlertDialog.Builder(context)
+                                    .setTitle("No Routes Within Tolerance")
+                                    .setMessage(message)
+                                    .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                                    .show();
+                        }
+
+                        routesCallback.onRoutesFetched(routeInfos);
+                    });
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         });
     }
+//                    new Handler(Looper.getMainLooper()).post(() -> routesCallback.onRoutesFetched(routeInfos));
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
+//    }
 
     public static void geocodePlace(String placeName, String apiKey, GeocodeCallback callback) {
         Log.d("debug", "geocodePlace: " + placeName);
