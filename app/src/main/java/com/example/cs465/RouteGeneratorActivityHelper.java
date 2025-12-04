@@ -38,7 +38,9 @@ public class RouteGeneratorActivityHelper {
         }
 
         List<RouteInfo> allRoutes = new ArrayList<>();
-        List<List<LatLng>> permutations = generatePermutations(intermediaries);
+        List<List<LatLng>> permutations = (intermediaries == null || intermediaries.isEmpty()) ?
+                Collections.singletonList(Collections.emptyList()) :
+                generatePermutations(intermediaries);
 
         final int total = permutations.size();
         final int[] completed = {0};
@@ -52,14 +54,31 @@ public class RouteGeneratorActivityHelper {
                     completed[0]++;
                     Log.d("RouteGeneratorHelper", "Received " + singleRoute.size() + " routes. Total so far: " + allRoutes.size());
                     if (completed[0] == total) {
-                        Log.d("RouteGeneratorHelper", "All routes fetched! Total: " + allRoutes.size());
-                        routesCallback.onRoutesFetched(allRoutes);
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            if (allRoutes.isEmpty()) {
+                                String message;
+                                if ("distance".equals(constraintType)) {
+                                    message = "No routes are within your +1 km tolerance.";
+                                } else {
+                                    message = "No routes are within your +10 min tolerance.";
+                                }
+
+                                new android.app.AlertDialog.Builder(context)
+                                        .setTitle("No Routes Found Within Time/Distance Constraints")
+                                        .setMessage(message)
+                                        .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                                        .show();
+                            } else {
+                                routesCallback.onRoutesFetched(allRoutes);
+                            }
+                        });
+//                        Log.d("RouteGeneratorHelper", "All routes fetched! Total: " + allRoutes.size());
+//                        routesCallback.onRoutesFetched(allRoutes);
                     }
                 }
             });
         }
     }
-
     private static List<List<LatLng>> generatePermutations(List<LatLng> points) {
         List<List<LatLng>> results = new ArrayList<>();
         permute(points, 0, results);
@@ -156,8 +175,6 @@ public class RouteGeneratorActivityHelper {
                         double distanceKm = distanceMeters / 1000.0;
                         double durationMinutes = durationSeconds / 60.0;
 
-                        // fixing time / distance inputs
-
                         boolean passes = true;
                         double diff = 0;
 
@@ -165,7 +182,7 @@ public class RouteGeneratorActivityHelper {
                             passes = distanceKm <= (constraintValue + 1.0);
                             diff = Math.abs(distanceKm - constraintValue);
                         } else if ("time".equals(constraintType)) {
-                            passes = durationMinutes <= (constraintValue + 20.0);
+                            passes = durationMinutes <= (constraintValue + 10.0);
                             diff = Math.abs(durationMinutes - constraintValue);
                         }
 
@@ -187,28 +204,8 @@ public class RouteGeneratorActivityHelper {
 //                        List<LatLng> decodePath = PolyUtil.decode(polyline);
 //                        routeInfos.add(new RouteInfo(decodePath, distanceText, durationText));
                     }
-                    final RouteInfo finalClosest = closestRoute;
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        // Show popup if no routes pass tolerance
-                        if (routeInfos.isEmpty() && finalClosest != null) {
-                            String message;
-                            if ("distance".equals(constraintType)) {
-                                message = "No routes are within your +1 km tolerance.\n" +
-                                        "Closest route distance: " + finalClosest.distanceText;
-                            } else {
-                                message = "No routes are within your +20 min tolerance.\n" +
-                                        "Closest route duration: " + finalClosest.durationText;
-                            }
-
-                            new android.app.AlertDialog.Builder(context)
-                                    .setTitle("No Routes Within Tolerance")
-                                    .setMessage(message)
-                                    .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
-                                    .show();
-                        }
-
-                        routesCallback.onRoutesFetched(routeInfos);
-                    });
+                    final List<RouteInfo> finalRoutes = routeInfos;
+                    new Handler(Looper.getMainLooper()).post(() -> routesCallback.onRoutesFetched(finalRoutes));
 
                 } catch (Exception e) {
                     e.printStackTrace();

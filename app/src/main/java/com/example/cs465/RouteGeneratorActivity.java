@@ -496,15 +496,17 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
 
                         LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                        for (LatLng point: routes.get(0).path) {
-                            builder.include(point);
-                        }
+                        if (!routes.isEmpty()) {
+                            for (LatLng point: routes.get(0).path) {
+                                builder.include(point);
+                            }
 
-                        LatLngBounds bounds = builder.build();
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
-                        mMap.setOnPolylineClickListener(polyline ->
-                                Log.d("Map", "Clicked " + polyline.getTag())
-                        );
+                            LatLngBounds bounds = builder.build();
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
+                            mMap.setOnPolylineClickListener(polyline ->
+                                    Log.d("Map", "Clicked " + polyline.getTag())
+                            );
+                        }
                     });
                 });
             });

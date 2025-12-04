@@ -57,7 +57,6 @@ public class RouteInputActivity extends AppCompatActivity {
 
             String start = startEdit.getText().toString().trim();
             String end = endEdit.getText().toString().trim();
-            String value = distanceEdit.getText().toString().trim();
             List<String> intermediates = Arrays.asList(
                     landmarksEditText.getText().toString().trim().split("\\s*,\\s*"));
             ArrayList<String> locationList = new ArrayList<>();
@@ -68,14 +67,13 @@ public class RouteInputActivity extends AppCompatActivity {
             Intent intent = new Intent(RouteInputActivity.this, RouteGeneratorActivity.class);
 
             String measure = (timeRadio.isChecked()) ? "time" : "distance";
-            String distance = distanceEdit.getText().toString().trim();
+            String value = distanceEdit.getText().toString().trim();
 
 
             intent.putExtra("start", start);
             intent.putStringArrayListExtra("intermediates", new ArrayList<>(intermediates));
             intent.putExtra("end", end);
             intent.putExtra("measure", measure);
-            intent.putExtra("distance", distance);
             intent.putExtra("value", value);
             startActivity(intent);
         });
