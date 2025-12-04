@@ -5,6 +5,7 @@ import static android.content.Context.MODE_PRIVATE;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,10 +14,14 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.WindowDecorActionBar;
+import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.Gson;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -50,6 +55,10 @@ public class SavedRouteAdapter extends RecyclerView.Adapter<SavedRouteAdapter.Vi
         SimpleDateFormat sdf = new SimpleDateFormat("MM/dd HH:mm");
         holder.routeInfo.setText(sdf.format(date));
 
+        holder.exportButton.setOnClickListener(v -> {
+            exportGpx(route);
+        });
+
         holder.navigateButton.setOnClickListener(v -> {
             Intent intent = new Intent(context, NavigationActivity.class);
             intent.putParcelableArrayListExtra("routePoints", new ArrayList<>(route.polylinePoints));
@@ -75,14 +84,63 @@ public class SavedRouteAdapter extends RecyclerView.Adapter<SavedRouteAdapter.Vi
     static class ViewHolder extends RecyclerView.ViewHolder {
 //        public WindowDecorActionBar.TabImpl routeInfoTextView;
         TextView routeName, routeInfo;
-        Button navigateButton, deleteButton;
+        Button exportButton, navigateButton, deleteButton;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             routeName = itemView.findViewById(R.id.routeName);
             routeInfo = itemView.findViewById(R.id.routeInfo);
+            exportButton = itemView.findViewById(R.id.exportButton);
             navigateButton = itemView.findViewById(R.id.navigateButton);
             deleteButton = itemView.findViewById(R.id.deleteButton);
+        }
+    }
+
+    private String buildGpx(SavedRoute route) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        sb.append("<gpx version=\"1.1\" creator=\"CS465-App\">\n");
+        sb.append("    <trk>\n");
+        sb.append("        <name>").append(route.name != null ? route.name : "Route").append("</name>\n");
+        sb.append("        <trkseg>\n");
+
+        for (LatLng pt : route.polylinePoints) {
+            sb.append("      <trkpt lat=\"")
+                    .append(pt.latitude)
+                    .append("\" lon=\"")
+                    .append(pt.longitude)
+                    .append("\">\n");
+            sb.append("      </trkpt>\n");
+        }
+        sb.append("    </trkseg>\n");
+        sb.append("  </trk>\n");
+        sb.append("</gpx>");
+
+        return sb.toString();
+    }
+
+    private void exportGpx(SavedRoute route) {
+        try {
+            String gpxData = buildGpx(route);
+
+            File gpxFile = new File(context.getCacheDir(), route.name + ".gpx");
+            FileOutputStream fos = new FileOutputStream(gpxFile);
+            fos.write(gpxData.getBytes());
+            fos.close();
+
+            Uri uri = FileProvider.getUriForFile(
+                    context,
+                    context.getPackageName() + ".fileprovider",
+                    gpxFile
+            );
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("application/gpx+xml");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            context.startActivity(Intent.createChooser(shareIntent, "Export GPX"));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
