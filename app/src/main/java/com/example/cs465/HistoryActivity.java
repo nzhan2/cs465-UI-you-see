@@ -1,5 +1,6 @@
 package com.example.cs465;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
@@ -31,5 +32,10 @@ public class HistoryActivity extends AppCompatActivity {
             HistoryStorage.clearRoutes(this);
             adapter.updateData(HistoryStorage.getRoutes(this));
         });
+
+        Button backButton = findViewById(R.id.hBackButton);
+        backButton.setOnClickListener(v ->
+                startActivity(new Intent(HistoryActivity.this, MainActivity.class))
+        );
     }
 }
