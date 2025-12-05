@@ -1,61 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
+
     <FrameLayout
+        android:id="@+id/mapContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Google Map FIRST so others appear on top -->
+        <fragment
+            android:id="@+id/mapNav"
+            android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- Custom zoom controls -->
+        <LinearLayout
+            android:id="@+id/customZoomContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="20dp"
             android:orientation="vertical">
 
-            <fragment
-                android:id="@+id/navMap"
-                android:name="com.google.android.gms.maps.SupportMapFragment"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+            <ImageButton
+                android:id="@+id/btnZoomIn"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:background="@drawable/zoom_button_bg"
+                android:src="@android:drawable/ic_input_add"
+                app:tint="@android:color/black" />
 
-            <Button
-                android:id="@+id/navBackButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Back"
-                android:layout_margin="16dp"
-                android:backgroundTint="@color/white"
-                android:textColor="@color/black"
-                android:elevation="4dp"
-                android:layout_gravity="start|top" />
+            <ImageButton
+                android:id="@+id/btnZoomOut"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/zoom_button_bg"
+                android:src="@drawable/ic_minus"
+                app:tint="@android:color/black" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/backButtonNav"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:orientation="vertical"
-            >
-
-            <TextView
-                android:id="@+id/routeLegendRed"
-                android:layout_width="match_parent"
-                android:layout_gravity="start|bottom"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                android:padding="16dp"
-                android:textColor="#FFFF0000"
-                android:background="@color/white"
-                android:textSize="16sp"
-                android:text="Current location → Start"/>
-            <TextView
-                android:id="@+id/routeLegendBlue"
-                android:layout_width="match_parent"
-                android:layout_gravity="bottom|end"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                android:padding="16dp"
-                android:textColor="#FF0000FF"
-                android:background="@color/white"
-                android:textSize="16sp"
-                android:text="Start → End"/>
-    </LinearLayout>
+            android:text="Back"
+            android:layout_margin="16dp"
+            android:backgroundTint="@color/white"
+            android:textColor="@color/black"
+            android:elevation="6dp"
+            android:textStyle="bold"
+            android:paddingHorizontal="20dp"
+            android:paddingVertical="10dp"
+            android:layout_gravity="start|top" />
 
     </FrameLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/toggleDirectionsBtn"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:text="Directions"
+        android:layout_margin="20dp"
+        app:cornerRadius="20dp"
+        android:layout_gravity="bottom|center_horizontal"/>
+
+    <LinearLayout
+        android:id="@+id/bottomSheet"
+        android:layout_width="match_parent"
+        android:layout_height="350dp"
+        android:background="@color/white"
+        android:orientation="vertical"
+        app:behavior_hideable="false"
+        app:behavior_peekHeight="70dp"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+        <View
+            android:layout_width="60dp"
+            android:layout_height="6dp"
+            android:background="@drawable/bottom_sheet_handle"
+            android:layout_gravity="center"
+            android:layout_marginTop="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerDirections"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </LinearLayout>
+
+
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
