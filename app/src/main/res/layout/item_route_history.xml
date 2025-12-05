@@ -4,6 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
+    android:background="@color/white"
     android:padding="12dp">
 
     <!-- Text block -->
@@ -35,7 +36,7 @@
         android:layout_height="wrap_content"
         android:text="View Route"
         android:textColor="@android:color/white"
-        app:backgroundTint="?attr/colorPrimary"
+        android:backgroundTint="@android:color/holo_blue_dark"
         app:cornerRadius="50dp"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"

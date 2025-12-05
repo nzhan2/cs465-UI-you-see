@@ -23,7 +23,7 @@ public class HistoryActivity extends AppCompatActivity {
 
         // Load initial data
         List<RouteHistoryItem> routes = HistoryStorage.getRoutes(this);
-        adapter = new HistoryAdapter(routes);
+        adapter = new HistoryAdapter(routes, this);
         recyclerView.setAdapter(adapter);
 
         // CLEAR BUTTON
@@ -32,7 +32,6 @@ public class HistoryActivity extends AppCompatActivity {
             HistoryStorage.clearRoutes(this);
             adapter.updateData(HistoryStorage.getRoutes(this));
         });
-
         Button backButton = findViewById(R.id.hBackButton);
         backButton.setOnClickListener(v ->
                 startActivity(new Intent(HistoryActivity.this, MainActivity.class))

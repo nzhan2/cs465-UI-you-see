@@ -87,12 +87,14 @@ public class MainActivity extends AppCompatActivity {
             String start = startEdit.getText().toString().trim();
             String end = endEdit.getText().toString().trim();
 
+            /*
             RouteHistoryItem historyItem = new RouteHistoryItem(
                     start,
                     end,
                     System.currentTimeMillis()
             );
             HistoryStorage.saveRoute(MainActivity.this, historyItem);
+            */
 
             List<String> intermediates = Arrays.asList(
                     landmarksEditText.getText().toString().trim().split("\\s*,\\s*"));
