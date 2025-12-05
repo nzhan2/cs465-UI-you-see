@@ -13,40 +13,33 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="16dp">
 
-            <!-- Header -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="What do you want to see today?"
-                android:textSize="22sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:layout_gravity="center_horizontal"
-                android:paddingBottom="24dp"
-                android:textColor="@android:color/black"/>
+                android:paddingBottom="16dp"/>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Measure by:"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:paddingBottom="8dp"/>
+                android:text="Measure by:"/>
 
             <RadioGroup
                 android:id="@+id/measureRadioGroup"
                 android:orientation="horizontal"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingBottom="16dp">
+                android:layout_height="wrap_content">
 
                 <RadioButton
                     android:id="@+id/timeRadio"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Time"
-                    android:paddingEnd="24dp"/>
+                    android:text="Time"/>
 
                 <RadioButton
                     android:id="@+id/distanceRadio"
@@ -59,35 +52,26 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="I want a..."
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginTop="4dp"
-                android:paddingBottom="8dp"/>
+                android:layout_marginTop="16dp"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingBottom="16dp"
-                android:gravity="center_vertical">
+                android:orientation="horizontal">
 
                 <EditText
-                    android:id="@+id/constraintValueInput"
+                    android:id="@+id/distanceEditText"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:hint="Enter value (km or min)"
-                    android:inputType="numberDecimal"
-                    android:padding="12dp"
-                    android:background="@android:drawable/editbox_background"
-                    android:layout_marginEnd="8dp"/>
+                    android:hint="Enter distance in meters..."
+                    android:inputType="numberDecimal"/>
 
                 <TextView
-                    android:id="@+id/longRouteText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="long route"
-                    android:textSize="14sp"
+                    android:layout_gravity="center_vertical"
                     android:paddingStart="8dp"/>
             </LinearLayout>
 
@@ -95,87 +79,54 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="that starts at:"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginTop="4dp"
-                android:paddingBottom="8dp"/>
+                android:layout_marginTop="16dp"/>
 
             <EditText
                 android:id="@+id/startEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Add start location"
-                android:inputType="text"
-                android:padding="12dp"
-                android:background="@android:drawable/editbox_background"
-                android:layout_marginBottom="16dp"/>
+                android:inputType="text"/>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="and ends at:"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginTop="4dp"
-                android:paddingBottom="8dp"/>
+                android:layout_marginTop="8dp"/>
 
             <EditText
                 android:id="@+id/endEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Add end location"
-                android:inputType="text"
-                android:padding="12dp"
-                android:background="@android:drawable/editbox_background"
-                android:layout_marginBottom="16dp"/>
+                android:inputType="text"/>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="with the following landmarks:"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginTop="4dp"
-                android:paddingBottom="8dp"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="(Optional)"
-                android:textSize="12sp"
-                android:textColor="@android:color/darker_gray"
-                android:paddingBottom="8dp"/>
+                android:layout_marginTop="16dp"/>
 
             <EditText
                 android:id="@+id/landmarksEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Enter location in the form NAME CITY, NAME CITY"
-                android:inputType="text"
-                android:padding="12dp"
-                android:background="@android:drawable/editbox_background"
-                android:minLines="3"
-                android:gravity="top"/>
+                android:inputType="text"/>
 
             <!--<Button
                 android:id="@+id/addLandmarkButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Add another landmark"
-                android:layout_marginTop="8dp"
-                android:layout_gravity="center_horizontal"/>-->
+                android:layout_marginTop="8dp"/>-->
 
             <Button
                 android:id="@+id/generateButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="GENERATE"
-                android:layout_marginTop="32dp"
-                android:padding="16dp"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:backgroundTint="@android:color/holo_blue_dark"
-                android:textColor="@android:color/white"/>
+                android:layout_marginTop="24dp"/>
 
         </LinearLayout>
     </ScrollView>
