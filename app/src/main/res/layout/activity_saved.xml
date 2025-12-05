@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".SavedActivity"
+    android:background="@android:color/white">
+
+    <!-- Page Content -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/savedTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Saved Routes"
+            android:textStyle="bold"
+            android:textSize="22sp"
+            android:textColor="@android:color/black"
+            android:layout_marginBottom="24dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/savedRoutesRecycler"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:scrollbars="vertical"/>
+
+        <!-- Route Info Row -->
+<!--        <LinearLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="horizontal"-->
+<!--            android:gravity="center_vertical">-->
+
+<!--            &lt;!&ndash; Route Info &ndash;&gt;-->
+<!--            <LinearLayout-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1"-->
+<!--                android:orientation="vertical">-->
+
+<!--&lt;!&ndash;                <TextView&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:layout_width="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:text="State Farm"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:textStyle="bold"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:textSize="14sp" />&ndash;&gt;-->
+
+<!--&lt;!&ndash;                <TextView&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:layout_width="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:layout_height="wrap_content"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:text="11/11   1:11"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:textSize="12sp"&ndash;&gt;-->
+<!--&lt;!&ndash;                    android:textColor="@android:color/darker_gray" />&ndash;&gt;-->
+<!--                <TextView-->
+<!--                    android:id="@+id/routeName"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:textStyle="bold"-->
+<!--                    android:textSize="14sp" />-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/routeTimestamp"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:textSize="12sp"-->
+<!--                    android:textColor="@android:color/darker_gray" />-->
+
+<!--            </LinearLayout>-->
+
+<!--            &lt;!&ndash; Action Buttons &ndash;&gt;-->
+<!--            <LinearLayout-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:orientation="horizontal"-->
+<!--                android:gravity="end">-->
+
+<!--                <Button-->
+<!--                    android:id="@+id/exportButton"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="Export" />-->
+
+<!--                <Button-->
+<!--                    android:id="@+id/navigateButton"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="Navigate"-->
+<!--                    android:layout_marginStart="8dp" />-->
+
+<!--                <Button-->
+<!--                    android:id="@+id/deleteButton"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="Delete"-->
+<!--                    android:layout_marginStart="8dp" />-->
+<!--            </LinearLayout>-->
+<!--        </LinearLayout>-->
+
+        <!-- Spacer to push the back button down -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Back Button -->
+        <Button
+            android:id="@+id/backButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Back"
+            android:layout_gravity="start"
+            android:layout_marginBottom="16dp" />
+    </LinearLayout>
+
+</FrameLayout>

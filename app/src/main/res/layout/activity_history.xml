@@ -1,84 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/historyRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="60dp"
-            android:layout_marginLeft="10dp"
-            android:text="State Farm"
-            android:textStyle="bold"
-            android:textSize="14sp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:text="11/11   1:11"
-            android:textSize="12sp" />
-    </LinearLayout>
-
-    <Button
-        android:layout_width="87dp"
-        android:layout_height="47dp"
-        android:text="Delete"
-        android:textSize="12dp"
-        tools:layout_editor_absoluteX="324dp"
-        tools:layout_editor_absoluteY="53dp" />
-
-    <Button
-        android:layout_width="87dp"
-        android:layout_height="47dp"
-        android:text="Navigate"
-        android:textSize="9dp"
-        tools:layout_editor_absoluteX="237dp"
-        tools:layout_editor_absoluteY="53dp" />
-    <Button
-        android:layout_width="87dp"
-        android:layout_height="47dp"
-        android:text="Export"
-        android:textSize="12dp"
-        tools:layout_editor_absoluteX="150dp"
-        tools:layout_editor_absoluteY="53dp" />
-
-    <TextView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/historyRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center_horizontal"
-        android:text="SAVED"
-        android:textColor="@color/black"
-        android:textSize="30dp"
-        android:textStyle="bold" />
+        android:padding="8dp"
+        android:clipToPadding="false"/>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/clearHistoryButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Clear History"
+        android:textColor="@android:color/white"
+        app:backgroundTint="?attr/colorPrimary"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        app:cornerRadius="50dp"
+        android:layout_gravity="end|bottom"
+        android:layout_margin="24dp" />
+
+    <!-- Spacer to push the back button down -->
+    <View
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:textStyle="bold"
-        android:layout_marginRight="220dp"
-        android:textColor="@color/white"
-        android:text="History"
-        app:layout_constraintBottom_toBottomOf="parent">
-    </Button>
+        android:layout_weight="1" />
 
+    <!-- Back Button -->
     <Button
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginLeft="220dp"
-        android:textColor="@color/white"
-        android:text="Saved"
-        app:layout_constraintBottom_toBottomOf="parent">
-    </Button>
+        android:id="@+id/hBackButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Back"
+        android:layout_margin="24dp"
+        android:layout_gravity="start|bottom"
+        android:layout_marginBottom="24dp" />
 
 
-
-</androidx.constraintlayout.widget.ConstraintLayout>
-
+</FrameLayout>

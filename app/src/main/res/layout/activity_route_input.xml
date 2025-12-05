@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <ImageView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
-        android:layout_gravity="top"/>
+    android:layout_height="wrap_content">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -66,19 +60,14 @@
                 android:orientation="horizontal">
 
                 <EditText
-                    android:id="@+id/distanceEditText"
-                    android:layout_width="0dp"
+                    android:id="@+id/constraintValueInput"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="Enter distance..."
+                    android:hint="Enter value (km or min)"
                     android:inputType="numberDecimal"/>
 
-                <Spinner
-                    android:id="@+id/distanceUnitSpinner"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-
                 <TextView
+                    android:id="@+id/longRouteText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="long route"
@@ -92,11 +81,11 @@
                 android:text="that starts at:"
                 android:layout_marginTop="16dp"/>
 
-            <AutoCompleteTextView
+            <EditText
                 android:id="@+id/startEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Search locations..."
+                android:hint="Add start location"
                 android:inputType="text"/>
 
             <TextView
@@ -105,11 +94,11 @@
                 android:text="and ends at:"
                 android:layout_marginTop="8dp"/>
 
-            <AutoCompleteTextView
+            <EditText
                 android:id="@+id/endEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Search locations..."
+                android:hint="Add end location"
                 android:inputType="text"/>
 
             <TextView
@@ -118,19 +107,19 @@
                 android:text="with the following landmarks:"
                 android:layout_marginTop="16dp"/>
 
-            <AutoCompleteTextView
+            <EditText
                 android:id="@+id/landmarksEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Search categories/landmarks"
+                android:hint="Enter location in the form NAME CITY, NAME CITY"
                 android:inputType="text"/>
 
-            <Button
+            <!--<Button
                 android:id="@+id/addLandmarkButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Add another landmark"
-                android:layout_marginTop="8dp"/>
+                android:layout_marginTop="8dp"/>-->
 
             <Button
                 android:id="@+id/generateButton"

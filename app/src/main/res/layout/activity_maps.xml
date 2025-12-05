@@ -25,14 +25,63 @@
             android:elevation="4dp"
             android:layout_gravity="start|top" />
 
-        <TextView
-            android:id="@+id/routeInfoTextView"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:orientation="horizontal"
+            android:layout_gravity="bottom"
+            android:padding="20dp">
+
+            <Button
+                android:id="@+id/saveButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Save"
+                android:backgroundTint="@color/white"
+                android:textColor="@color/black"
+                android:elevation="4dp"
+                android:visibility="gone"/>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <Button
+                android:id="@+id/navButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Navigate!"
+                android:backgroundTint="@color/white"
+                android:textColor="@color/black"
+                android:elevation="4dp"
+                android:visibility="gone"/>
+        </LinearLayout>
+
+<!--        <TextView-->
+<!--            android:id="@+id/routeInfoTextView"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:background="@color/white"-->
+<!--            android:layout_gravity="bottom"-->
+<!--            android:textColor="@color/black"-->
+<!--            android:text="Temporary text">-->
+<!--        </TextView>-->
+
+        <ScrollView
+            android:id="@+id/routeInfoScrollView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/white"
             android:layout_gravity="bottom"
-            android:textColor="@color/black"
-            android:text="Temporary text">
-        </TextView>
+            android:background="@color/white"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:id="@+id/routeInfoContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
     </FrameLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
