@@ -362,9 +362,9 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
                         );
 
                         mMap.addMarker(new MarkerOptions()
-                                .position(destLatLng)
-                                .title("End: " + end)
-                                .icon(getPinMarker("#cf4e3a", "E")) //red
+                                        .position(destLatLng)
+                                        .title("End: " + end)
+                                        .icon(getPinMarker("#cf4e3a", "E")) //red
 //                                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
                         );
 
@@ -748,13 +748,13 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         }
     }
 
-//    @Override
+    //    @Override
     public boolean onMyLocationButtonClick() {
         Toast.makeText(this, "MyLocation button clicked", Toast.LENGTH_SHORT).show();
         return false;
     }
 
-//    @Override
+    //    @Override
     public void onMyLocationClick(@NonNull Location location) {
         Toast.makeText(this, "Current location:\n" + location, Toast.LENGTH_LONG).show();
     }
