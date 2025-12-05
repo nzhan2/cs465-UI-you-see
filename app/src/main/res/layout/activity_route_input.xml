@@ -60,14 +60,14 @@
                 android:orientation="horizontal">
 
                 <EditText
-                    android:id="@+id/distanceEditText"
-                    android:layout_width="0dp"
+                    android:id="@+id/constraintValueInput"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="Enter distance in meters..."
+                    android:hint="Enter value (km or min)"
                     android:inputType="numberDecimal"/>
 
                 <TextView
+                    android:id="@+id/longRouteText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="long route"

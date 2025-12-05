@@ -19,6 +19,8 @@ import okhttp3.Callback;
 import okhttp3.Request;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
+import android.content.Context;
+
 
 public class RouteGeneratorActivityHelper {
     public interface RoutesCallback {
@@ -29,20 +31,22 @@ public class RouteGeneratorActivityHelper {
         void onGeocoded(LatLng latLng);
     }
 
-    public static void getRoutes(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, RoutesCallback routesCallback) {
+    public static void getRoutes(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, String constraintType, double constraintValue, Context context, RoutesCallback routesCallback) {
         if (intermediaries == null || intermediaries.isEmpty()) {
-            getSingleRoute(origin, destination, null, apiKey, routesCallback);
+            getSingleRoute(origin, destination, null, apiKey, constraintType, constraintValue, context, routesCallback);
             return;
         }
 
         List<RouteInfo> allRoutes = new ArrayList<>();
-        List<List<LatLng>> permutations = generatePermutations(intermediaries);
+        List<List<LatLng>> permutations = (intermediaries == null || intermediaries.isEmpty()) ?
+                Collections.singletonList(Collections.emptyList()) :
+                generatePermutations(intermediaries);
 
         final int total = permutations.size();
         final int[] completed = {0};
 
         for (List<LatLng> midPoints: permutations) {
-            getSingleRoute(origin, destination, midPoints, apiKey, singleRoute -> {
+            getSingleRoute(origin, destination, midPoints, apiKey, constraintType, constraintValue, context, singleRoute -> {
                 synchronized (allRoutes) {
                     if (!singleRoute.isEmpty()) {
                         allRoutes.addAll(singleRoute);
@@ -50,14 +54,36 @@ public class RouteGeneratorActivityHelper {
                     completed[0]++;
                     Log.d("RouteGeneratorHelper", "Received " + singleRoute.size() + " routes. Total so far: " + allRoutes.size());
                     if (completed[0] == total) {
-                        Log.d("RouteGeneratorHelper", "All routes fetched! Total: " + allRoutes.size());
-                        routesCallback.onRoutesFetched(allRoutes);
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            if (allRoutes.isEmpty()) {
+                                String message;
+                                if ("distance".equals(constraintType)) {
+                                    message = "No routes are within your +1 km tolerance.";
+                                } else {
+                                    message = "No routes are within your +10 min tolerance.";
+                                }
+
+                                new android.app.AlertDialog.Builder(context)
+                                        .setTitle("No Routes Found Within Time/Distance Constraints")
+                                        .setMessage(message)
+                                        .setPositiveButton("OK", (dialog, which) -> {
+                                            dialog.dismiss();
+                                            if (context instanceof android.app.Activity) {
+                                                ((android.app.Activity) context).finish();
+                                            }
+                                        })
+                                        .show();
+                            } else {
+                                routesCallback.onRoutesFetched(allRoutes);
+                            }
+                        });
+//                        Log.d("RouteGeneratorHelper", "All routes fetched! Total: " + allRoutes.size());
+//                        routesCallback.onRoutesFetched(allRoutes);
                     }
                 }
             });
         }
     }
-
     private static List<List<LatLng>> generatePermutations(List<LatLng> points) {
         List<List<LatLng>> results = new ArrayList<>();
         permute(points, 0, results);
@@ -75,7 +101,7 @@ public class RouteGeneratorActivityHelper {
         }
     }
 
-    private static void getSingleRoute(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, RoutesCallback routesCallback) {
+    private static void getSingleRoute(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, String constraintType, double constraintValue, Context context, RoutesCallback routesCallback) {
         OkHttpClient client = new OkHttpClient();
 
         String url = "https://routes.googleapis.com/directions/v2:computeRoutes?key=" + apiKey;
@@ -137,6 +163,8 @@ public class RouteGeneratorActivityHelper {
                 String jsonData = response.body().string();
                 Log.d("RouteHelper", "Routes API response: " + jsonData);
                 List<RouteInfo> routeInfos = new ArrayList<>();
+                RouteInfo closestRoute = null;
+                double minDifference = Double.MAX_VALUE;
 
                 try {
                     JSONObject jsonObject = new JSONObject(jsonData);
@@ -149,20 +177,54 @@ public class RouteGeneratorActivityHelper {
                         double distanceMeters = route.optDouble("distanceMeters", 0);
                         double durationSeconds = Double.parseDouble(route.optString("duration").replace("s", ""));
 
-                        String distanceText = String.format("%.1f km", distanceMeters / 1000.0);
-                        int durationMinutes = (int) Math.ceil(durationSeconds / 60.0);
-                        String durationText = durationMinutes + "min";
+                        double distanceKm = distanceMeters / 1000.0;
+                        double durationMinutes = durationSeconds / 60.0;
 
-                        List<LatLng> decodePath = PolyUtil.decode(polyline);
-                        routeInfos.add(new RouteInfo(decodePath, distanceText, durationText));
+                        boolean passes = true;
+                        double diff = 0;
+
+                        if ("distance".equals(constraintType)) {
+                            passes = distanceKm <= (constraintValue + 1.0);
+                            diff = Math.abs(distanceKm - constraintValue);
+                        } else if ("time".equals(constraintType)) {
+                            passes = durationMinutes <= (constraintValue + 10.0);
+                            diff = Math.abs(durationMinutes - constraintValue);
+                        }
+
+                        if (diff < minDifference) {
+                            minDifference = diff;
+                            closestRoute = new RouteInfo(PolyUtil.decode(polyline),
+                                    String.format("%.1f km", distanceKm),
+                                    (int)Math.ceil(durationMinutes) + " min");
+                        }
+                        if (passes) {
+                            List<LatLng> decodePath = PolyUtil.decode(polyline);
+                            String distanceText = String.format("%.1f km", distanceKm);
+                            String durationText = (int)Math.ceil(durationMinutes) + " min";
+                            routeInfos.add(new RouteInfo(decodePath, distanceText, durationText));
+                        }
+//                        String distanceText = String.format("%.1f km", distanceKm);
+//                        String durationText = durationMinutes + "min";
+
+//                        List<LatLng> decodePath = PolyUtil.decode(polyline);
+//                        routeInfos.add(new RouteInfo(decodePath, distanceText, durationText));
                     }
-                    new Handler(Looper.getMainLooper()).post(() -> routesCallback.onRoutesFetched(routeInfos));
+                    final List<RouteInfo> finalRoutes = routeInfos;
+                    new Handler(Looper.getMainLooper()).post(() -> routesCallback.onRoutesFetched(finalRoutes));
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         });
     }
+//                    new Handler(Looper.getMainLooper()).post(() -> routesCallback.onRoutesFetched(routeInfos));
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
+//    }
 
     public static void geocodePlace(String placeName, String apiKey, GeocodeCallback callback) {
         Log.d("debug", "geocodePlace: " + placeName);

@@ -1,5 +1,7 @@
 package com.example.cs465;
 
+import static java.util.Objects.isNull;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -45,11 +47,14 @@ public class RouteInputActivity extends AppCompatActivity {
 
         Button generateButton = findViewById(R.id.generateButton);
         RadioButton timeRadio = findViewById(R.id.timeRadio);
-        EditText distanceEdit = findViewById(R.id.distanceEditText);
+        RadioButton distanceRadio = findViewById(R.id.distanceRadio);
+        EditText distanceEdit = findViewById(R.id.constraintValueInput);
 
         generateButton.setOnClickListener(v -> {
             Log.d("debug", "test");
             Log.d("debug", "start: " + startEdit.getText());
+            Log.d("debug", "value :) " + isNull(distanceEdit.getText()));
+
             String start = startEdit.getText().toString().trim();
             String end = endEdit.getText().toString().trim();
             List<String> intermediates = Arrays.asList(
@@ -62,13 +67,14 @@ public class RouteInputActivity extends AppCompatActivity {
             Intent intent = new Intent(RouteInputActivity.this, RouteGeneratorActivity.class);
 
             String measure = (timeRadio.isChecked()) ? "time" : "distance";
-            String distance = distanceEdit.getText().toString().trim();
+            String value = distanceEdit.getText().toString().trim();
+
 
             intent.putExtra("start", start);
             intent.putStringArrayListExtra("intermediates", new ArrayList<>(intermediates));
             intent.putExtra("end", end);
             intent.putExtra("measure", measure);
-            intent.putExtra("distance", distance);
+            intent.putExtra("value", value);
             startActivity(intent);
         });
     }
