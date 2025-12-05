@@ -315,7 +315,7 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 //                        StringBuilder infoBuilder = new StringBuilder();
                         SpannableStringBuilder infoBuilder = new SpannableStringBuilder();
                         savedIntermediaryLatLngs = intermediaryLatLngs;
-                        Log.d("DEBUG_STEPS", routes.get(0).instructions.toString());
+//                        Log.d("DEBUG_STEPS", routes.get(0).instructions.toString());
 
 
                         List<Polyline> polylines = new ArrayList<>();
