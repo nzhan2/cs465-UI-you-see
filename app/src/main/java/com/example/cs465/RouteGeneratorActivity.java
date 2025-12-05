@@ -20,6 +20,7 @@ import android.os.Bundle;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -55,6 +56,8 @@ import android.widget.Toast;
 
 import org.jspecify.annotations.NonNull;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,6 +81,8 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
     private Button popupSaveButton;
     private Button popupNavButton;
+
+    private Button popupExportButton;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
     private boolean permissionDenied = false;
     String apiKey;
@@ -622,6 +627,37 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         });
     }
 
+    private String buildGpxFromRoute(List<LatLng> points, List<LatLng> intermediates) {
+        Log.d("gpx", "intermediates " + intermediates.size());
+        StringBuilder gpx = new StringBuilder();
+        gpx.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        gpx.append("<gpx version=\"1.1\" creator=\"RouteGeneratorApp\">\n");
+        gpx.append("  <trk>\n    <trkseg>\n");
+        for (LatLng p : points) {
+            gpx.append("      <trkpt lat=\"")
+                    .append(p.latitude)
+                    .append("\" lon=\"")
+                    .append(p.longitude)
+                    .append("\"/>\n");
+        }
+        gpx.append("    </trkseg>\n  </trk>\n");
+        if (intermediates != null) {
+            for (int i = 0; i < intermediates.size(); i++) {
+                LatLng m = intermediates.get(i);
+                gpx.append("  <wpt lat=\"")
+                        .append(m.latitude)
+                        .append("\" lon=\"")
+                        .append(m.longitude)
+                        .append("\"><name>Landmark ")
+                        .append(i + 1)
+                        .append("</name></wpt>\n");
+            }
+        }
+
+        gpx.append("</gpx>");
+        return gpx.toString();
+    }
+
     private void clearSelection(List<Polyline> polylines) {
         for (Polyline p : polylines) {
             p.setWidth(10f);
@@ -792,6 +828,7 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
         popupSaveButton = view.findViewById(R.id.popupSaveButton);
         popupNavButton = view.findViewById(R.id.popupNavButton);
+        popupExportButton = view.findViewById(R.id.popupExportButton);
 
         popupSaveButton.setOnClickListener(v -> {
             dialog.dismiss();
@@ -801,6 +838,38 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         popupNavButton.setOnClickListener(v -> {
             dialog.dismiss();
             onNavigatePressed.run();
+        });
+
+        popupExportButton.setOnClickListener(v -> {
+            try {
+                String gpxData = buildGpxFromRoute(
+                        selectedRoutePoints,
+                        savedIntermediaryLatLngs
+                );
+
+                String fileName = "route_export_" + System.currentTimeMillis() + ".gpx";
+                File gpxFile = new File(getExternalFilesDir(null), fileName);
+
+                FileOutputStream fos = new FileOutputStream(gpxFile);
+                fos.write(gpxData.getBytes());
+                fos.close();
+
+                Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                shareIntent.setType("application/gpx+xml");
+                shareIntent.putExtra(Intent.EXTRA_STREAM,
+                        FileProvider.getUriForFile(
+                                this,
+                                getPackageName() + ".fileprovider",
+                                gpxFile
+                        )
+                );
+                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                startActivity(Intent.createChooser(shareIntent, "Export GPX"));
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Error exporting GPX", Toast.LENGTH_SHORT).show();
+            }
         });
 
         dialog.setContentView(view);
