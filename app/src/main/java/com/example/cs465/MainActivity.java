@@ -1,12 +1,19 @@
 package com.example.cs465;
 
+import static java.util.Objects.isNull;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.Button;
 import android.widget.RadioButton;
+import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -57,7 +64,22 @@ public class MainActivity extends AppCompatActivity {
 
         Button generateButton = findViewById(R.id.generateButton);
         RadioButton timeRadio = findViewById(R.id.timeRadio);
-        EditText distanceEdit = findViewById(R.id.distanceEditText);
+        RadioButton distanceRadio = findViewById(R.id.distanceRadio);
+        TextView longRouteText = findViewById(R.id.longRouteText);
+
+        timeRadio.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                longRouteText.setText("min long route");
+            }
+        });
+
+        distanceRadio.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked) {
+                longRouteText.setText("km long route");
+            }
+        });
+
+        EditText distanceEdit = findViewById(R.id.constraintValueInput);
 
         generateButton.setOnClickListener(v -> {
             Log.d("debug", "test");
@@ -74,13 +96,13 @@ public class MainActivity extends AppCompatActivity {
             Intent intent = new Intent(MainActivity.this, RouteGeneratorActivity.class);
 
             String measure = (timeRadio.isChecked()) ? "time" : "distance";
-            String distance = distanceEdit.getText().toString().trim();
+            String value = distanceEdit.getText().toString().trim();
 
             intent.putExtra("start", start);
             intent.putStringArrayListExtra("intermediates", new ArrayList<>(intermediates));
             intent.putExtra("end", end);
             intent.putExtra("measure", measure);
-            intent.putExtra("distance", distance);
+            intent.putExtra("value", value);
             startActivity(intent);
         });
 

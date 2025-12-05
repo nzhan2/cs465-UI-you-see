@@ -20,6 +20,8 @@ import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import android.content.Context;
+
 
 public class RouteGeneratorActivityHelper {
 
@@ -31,41 +33,62 @@ public class RouteGeneratorActivityHelper {
         void onGeocoded(LatLng latLng);
     }
 
-    public static void getRoutes(LatLng origin, LatLng destination,
-                                 List<LatLng> intermediaries,
-                                 String apiKey,
-                                 RoutesCallback callback) {
-
+    public static void getRoutes(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, String constraintType, double constraintValue, Context context, RoutesCallback routesCallback) {
         if (intermediaries == null || intermediaries.isEmpty()) {
-            // No stops -> just return one route
-            getSingleRoute(origin, destination, null, apiKey, callback);
+            getSingleRoute(origin, destination, null, apiKey, constraintType, constraintValue, context, routesCallback);
             return;
         }
 
-        List<List<LatLng>> permutations = generatePermutations(intermediaries);
+        List<RouteInfo> allRoutes = new ArrayList<>();
+        List<List<LatLng>> permutations = (intermediaries == null || intermediaries.isEmpty()) ?
+                Collections.singletonList(Collections.emptyList()) :
+                generatePermutations(intermediaries);
 
         List<RouteInfo> allRoutes = new ArrayList<>();
         final int total = permutations.size();
-        final int[] done = {0};
+        final int[] completed = {0};
 
-        for (List<LatLng> order : permutations) {
-            getSingleRoute(origin, destination, order, apiKey, partialList -> {
+        for (List<LatLng> midPoints: permutations) {
+            getSingleRoute(origin, destination, midPoints, apiKey, constraintType, constraintValue, context, singleRoute -> {
                 synchronized (allRoutes) {
                     // Convert List<List<LatLng>> to RouteInfo list
-                    for (RouteInfo r : partialList) {
-                        allRoutes.add(r);
+                    if (!singleRoute.isEmpty()) {
+                        allRoutes.addAll(singleRoute);
                     }
-                    done[0]++;
+                    completed[0]++;
+                    Log.d("RouteGeneratorHelper", "Received " + singleRoute.size() + " routes. Total so far: " + allRoutes.size());
+                    if (completed[0] == total) {
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            if (allRoutes.isEmpty()) {
+                                String message;
+                                if ("distance".equals(constraintType)) {
+                                    message = "No routes are within your +1 km tolerance.";
+                                } else {
+                                    message = "No routes are within your +10 min tolerance.";
+                                }
 
-                    if (done[0] == total) {
-                        callback.onRoutesFetched(allRoutes);
+                                new android.app.AlertDialog.Builder(context)
+                                        .setTitle("No Routes Found Within Time/Distance Constraints")
+                                        .setMessage(message)
+                                        .setPositiveButton("OK", (dialog, which) -> {
+                                            dialog.dismiss();
+                                            if (context instanceof android.app.Activity) {
+                                                ((android.app.Activity) context).finish();
+                                            }
+                                        })
+                                        .show();
+                            } else {
+                                routesCallback.onRoutesFetched(allRoutes);
+                            }
+                        });
+//                        Log.d("RouteGeneratorHelper", "All routes fetched! Total: " + allRoutes.size());
+//                        routesCallback.onRoutesFetched(allRoutes);
                     }
                 }
             });
         }
     }
-
-    private static List<List<LatLng>> generatePermutations(List<LatLng> list) {
+    private static List<List<LatLng>> generatePermutations(List<LatLng> points) {
         List<List<LatLng>> results = new ArrayList<>();
         permute(list, 0, results);
         return results;
@@ -82,13 +105,9 @@ public class RouteGeneratorActivityHelper {
         }
     }
 
-    private static void getSingleRoute(LatLng origin,
-                                       LatLng destination,
-                                       List<LatLng> intermediaries,
-                                       String apiKey,
-                                       RoutesCallback callback) {
-
+    private static void getSingleRoute(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, String constraintType, double constraintValue, Context context, RoutesCallback routesCallback) {
         OkHttpClient client = new OkHttpClient();
+      
         String url = "https://routes.googleapis.com/directions/v2:computeRoutes?key=" + apiKey;
 
         JSONObject body = new JSONObject();
@@ -125,37 +144,71 @@ public class RouteGeneratorActivityHelper {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                List<RouteInfo> parsed = new ArrayList<>();
+                String jsonData = response.body().string();
+                Log.d("RouteHelper", "Routes API response: " + jsonData);
+                List<RouteInfo> routeInfos = new ArrayList<>();
+                RouteInfo closestRoute = null;
+                double minDifference = Double.MAX_VALUE;
 
                 try {
                     JSONObject json = new JSONObject(response.body().string());
                     JSONArray arr = json.getJSONArray("routes");
-                    for (int i = 0; i < arr.length(); i++) {
-                        JSONObject r = arr.getJSONObject(i);
+                  
+                    for (int i = 0; i < routes.length(); i++) {
+                        JSONObject route = routes.getJSONObject(i);
+                        String polyline = route.getJSONObject("polyline").getString("encodedPolyline");
 
-                        double meters = r.getDouble("distanceMeters");
-                        double secs = Double.parseDouble(r.getString("duration")
-                                .replace("s", ""));
+                        double distanceMeters = route.optDouble("distanceMeters", 0);
+                        double durationSeconds = Double.parseDouble(route.optString("duration").replace("s", ""));
 
-                        String dist = String.format("%.1f km", meters / 1000.0);
-                        String dur = ((int) Math.ceil(secs / 60.0)) + " min";
+                        double distanceKm = distanceMeters / 1000.0;
+                        double durationMinutes = durationSeconds / 60.0;
 
-                        List<LatLng> path = PolyUtil.decode(
-                                r.getJSONObject("polyline")
-                                        .getString("encodedPolyline")
-                        );
+                        boolean passes = true;
+                        double diff = 0;
 
-                        List<String> steps = extractInstructions(r);
-                        parsed.add(new RouteInfo(path, dist, dur, steps));
+                        if ("distance".equals(constraintType)) {
+                            passes = distanceKm <= (constraintValue + 1.0);
+                            diff = Math.abs(distanceKm - constraintValue);
+                        } else if ("time".equals(constraintType)) {
+                            passes = durationMinutes <= (constraintValue + 10.0);
+                            diff = Math.abs(durationMinutes - constraintValue);
+                        }
 
+                        if (diff < minDifference) {
+                            minDifference = diff;
+                            closestRoute = new RouteInfo(PolyUtil.decode(polyline),
+                                    String.format("%.1f km", distanceKm),
+                                    (int)Math.ceil(durationMinutes) + " min");
+                        }
+                        if (passes) {
+                            List<LatLng> decodePath = PolyUtil.decode(polyline);
+                            String distanceText = String.format("%.1f km", distanceKm);
+                            String durationText = (int)Math.ceil(durationMinutes) + " min";
+                            routeInfos.add(new RouteInfo(decodePath, distanceText, durationText));
+                        }
+//                        String distanceText = String.format("%.1f km", distanceKm);
+//                        String durationText = durationMinutes + "min";
+
+//                        List<LatLng> decodePath = PolyUtil.decode(polyline);
+//                        routeInfos.add(new RouteInfo(decodePath, distanceText, durationText));
                     }
-                } catch (Exception ignored) {}
+                    final List<RouteInfo> finalRoutes = routeInfos;
+                    new Handler(Looper.getMainLooper()).post(() -> routesCallback.onRoutesFetched(finalRoutes));
 
-                new Handler(Looper.getMainLooper())
-                        .post(() -> callback.onRoutesFetched(parsed));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
+//                    new Handler(Looper.getMainLooper()).post(() -> routesCallback.onRoutesFetched(routeInfos));
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
+//    }
 
 
 

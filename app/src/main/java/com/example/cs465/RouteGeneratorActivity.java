@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -20,6 +21,7 @@ import android.os.Bundle;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -32,6 +34,7 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -48,13 +51,17 @@ import android.view.Gravity;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import org.jspecify.annotations.NonNull;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,6 +85,8 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
     private Button popupSaveButton;
     private Button popupNavButton;
+
+    private Button popupExportButton;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
     private boolean permissionDenied = false;
     String apiKey;
@@ -101,17 +110,19 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         void onAllGeocoded(List<LatLng> allLatLngs);
     }
     int[] routeColors = {
-            Color.parseColor("#0f69fa"),
-            Color.parseColor("#cf4e3a"),
-            Color.parseColor("#6abd62"),
-            Color.parseColor("#7965d6"), // soft purple
-            Color.parseColor("#8FD0C6")  // soft teal
+            Color.parseColor("#FDCA40"),
+            Color.parseColor("#33B5E5"),
+            Color.parseColor("#5FAD56"),
+            Color.parseColor("#FF6978"),
+            Color.parseColor("#6D435A"),
     };
 
     private ScrollView routeInfoTextView;
 
     private String start;
     private String end;
+    private String measure;
+    private String value;
     private ArrayList<String> intermediateLocations = new ArrayList<>();
 
     @Override
@@ -132,6 +143,8 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
         start = getIntent().getStringExtra("start");
         end = getIntent().getStringExtra("end");
+        measure = getIntent().getStringExtra("measure");
+        value = getIntent().getStringExtra("value");
 
         /*start="Illini Union";
         end="Foellinger Auditorium";*/
@@ -247,6 +260,16 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
 
+        try {
+            boolean success = googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(this, R.raw.map_style));
+            if (!success) {
+                Log.e("MapStyle", "Style parsing failed.");
+            }
+        } catch (Resources.NotFoundException e) {
+            Log.e("MapStyle", "Can't find style. Error: ", e);
+        }
+
         mMap.setOnMyLocationButtonClickListener(this);
         mMap.setOnMyLocationClickListener(this);
         enableMyLocation();
@@ -265,10 +288,30 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         List<String> intermediaries = intermediateLocations;
         Log.d("debug", "intermediaries size: " + intermediaries.size());
 
+        EditText constraintValueInput = findViewById(R.id.constraintValueInput);
+
+        String constraintType = "distance"; // default
+        if (measure.equals("distance")) {
+            constraintType = "distance";
+        } else if (measure.equals("time")) {
+            constraintType = "time";
+        }
+
+        double constraintValue = 0;
+        try {
+            constraintValue = Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Enter a valid number", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final String finalConstraintType = constraintType;
+        final double finalConstraintValue = constraintValue;
+
         RouteGeneratorActivityHelper.geocodePlace(originName, apiKey, originLatLng -> {
             RouteGeneratorActivityHelper.geocodePlace(destinationName, apiKey, destLatLng -> {
                 geocodeAllPlaces(intermediaries, apiKey, intermediaryLatLngs -> {
-                    RouteGeneratorActivityHelper.getRoutes(originLatLng, destLatLng, intermediaryLatLngs, apiKey, routes -> {
+                    RouteGeneratorActivityHelper.getRoutes(originLatLng, destLatLng, intermediaryLatLngs, apiKey, finalConstraintType, finalConstraintValue, RouteGeneratorActivity.this, routes -> {
 //                        StringBuilder infoBuilder = new StringBuilder();
                         SpannableStringBuilder infoBuilder = new SpannableStringBuilder();
                         savedIntermediaryLatLngs = intermediaryLatLngs;
@@ -494,15 +537,17 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
 
                         LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                        for (LatLng point: routes.get(0).path) {
-                            builder.include(point);
-                        }
+                        if (!routes.isEmpty()) {
+                            for (LatLng point: routes.get(0).path) {
+                                builder.include(point);
+                            }
 
-                        LatLngBounds bounds = builder.build();
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
-                        mMap.setOnPolylineClickListener(polyline ->
-                                Log.d("Map", "Clicked " + polyline.getTag())
-                        );
+                            LatLngBounds bounds = builder.build();
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
+                            mMap.setOnPolylineClickListener(polyline ->
+                                    Log.d("Map", "Clicked " + polyline.getTag())
+                            );
+                        }
                     });
                 });
             });
@@ -618,10 +663,66 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
         saveButton.setVisibility(View.VISIBLE);
         navButton.setVisibility(View.VISIBLE);
+    
+        navButton.setOnClickListener(v -> {
+            Location myLocation = mMap.getMyLocation();
+            if (myLocation == null) {
+                Toast.makeText(this, "Current location not available", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            LatLng currentLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+
+            LatLng routeStart = points.get(0);
+            LatLng routeEnd = points.get(points.size() - 1);
+
+            ArrayList<String> intermediaryLatLings = getIntent().getStringArrayListExtra("intermediates");
+
+            LatLng landmark1 = savedIntermediaryLatLngs.size() > 0 ? savedIntermediaryLatLngs.get(0) : null;
+            LatLng landmark2 = savedIntermediaryLatLngs.size() > 1 ? savedIntermediaryLatLngs.get(1) : null;
+          
+
+            Intent intent = new Intent(RouteGeneratorActivity.this, NavigationActivity.class);
+            intent.putParcelableArrayListExtra("routePoints", new ArrayList<>(points));
+            intent.putExtra("userLocation", currentLatLng);
+            intent.putExtra("startPoint", routeStart);
+            intent.putExtra("endPoint", routeEnd);
+            intent.putExtra("landmark1", landmark1);
+            intent.putExtra("landmark2", landmark2);
+            startActivity(intent);
+        });
     }
 
+    private String buildGpxFromRoute(List<LatLng> points, List<LatLng> intermediates) {
+        Log.d("gpx", "intermediates " + intermediates.size());
+        StringBuilder gpx = new StringBuilder();
+        gpx.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        gpx.append("<gpx version=\"1.1\" creator=\"RouteGeneratorApp\">\n");
+        gpx.append("  <trk>\n    <trkseg>\n");
+        for (LatLng p : points) {
+            gpx.append("      <trkpt lat=\"")
+                    .append(p.latitude)
+                    .append("\" lon=\"")
+                    .append(p.longitude)
+                    .append("\"/>\n");
+        }
+        gpx.append("    </trkseg>\n  </trk>\n");
+        if (intermediates != null) {
+            for (int i = 0; i < intermediates.size(); i++) {
+                LatLng m = intermediates.get(i);
+                gpx.append("  <wpt lat=\"")
+                        .append(m.latitude)
+                        .append("\" lon=\"")
+                        .append(m.longitude)
+                        .append("\"><name>Landmark ")
+                        .append(i + 1)
+                        .append("</name></wpt>\n");
+            }
+        }
 
-
+        gpx.append("</gpx>");
+        return gpx.toString();
+    }
 
     private void clearSelection(List<Polyline> polylines) {
         for (Polyline p : polylines) {
@@ -775,6 +876,7 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
         popupSaveButton = view.findViewById(R.id.popupSaveButton);
         popupNavButton = view.findViewById(R.id.popupNavButton);
+        popupExportButton = view.findViewById(R.id.popupExportButton);
 
         popupSaveButton.setOnClickListener(v -> {
             dialog.dismiss();
@@ -784,6 +886,38 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         popupNavButton.setOnClickListener(v -> {
             dialog.dismiss();
             onNavigatePressed.run();  // << CORRECT BEHAVIOR
+        });
+
+        popupExportButton.setOnClickListener(v -> {
+            try {
+                String gpxData = buildGpxFromRoute(
+                        selectedRoutePoints,
+                        savedIntermediaryLatLngs
+                );
+
+                String fileName = "route_export_" + System.currentTimeMillis() + ".gpx";
+                File gpxFile = new File(getExternalFilesDir(null), fileName);
+
+                FileOutputStream fos = new FileOutputStream(gpxFile);
+                fos.write(gpxData.getBytes());
+                fos.close();
+
+                Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                shareIntent.setType("application/gpx+xml");
+                shareIntent.putExtra(Intent.EXTRA_STREAM,
+                        FileProvider.getUriForFile(
+                                this,
+                                getPackageName() + ".fileprovider",
+                                gpxFile
+                        )
+                );
+                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+                startActivity(Intent.createChooser(shareIntent, "Export GPX"));
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Error exporting GPX", Toast.LENGTH_SHORT).show();
+            }
         });
 
         dialog.setContentView(view);
