@@ -2,30 +2,31 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- MAP AREA -->
     <FrameLayout
         android:id="@+id/mapContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Google Map FIRST so others appear on top -->
         <fragment
             android:id="@+id/mapNav"
             android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
-        <!-- Custom zoom controls -->
+        <!-- ZOOM BUTTONS -->
         <LinearLayout
             android:id="@+id/customZoomContainer"
+            android:orientation="vertical"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="top|end"
             android:layout_marginTop="20dp"
             android:layout_marginEnd="20dp"
-            android:orientation="vertical">
+            android:layout_gravity="top|end">
 
             <ImageButton
                 android:id="@+id/btnZoomIn"
@@ -33,7 +34,7 @@
                 android:layout_height="45dp"
                 android:background="@drawable/zoom_button_bg"
                 android:src="@android:drawable/ic_input_add"
-                app:tint="@android:color/black" />
+                app:tint="@android:color/black"/>
 
             <ImageButton
                 android:id="@+id/btnZoomOut"
@@ -42,10 +43,10 @@
                 android:layout_marginTop="8dp"
                 android:background="@drawable/zoom_button_bg"
                 android:src="@drawable/ic_minus"
-                app:tint="@android:color/black" />
-
+                app:tint="@android:color/black"/>
         </LinearLayout>
 
+        <!-- BACK BUTTON -->
         <Button
             android:id="@+id/backButtonNav"
             android:layout_width="wrap_content"
@@ -58,11 +59,11 @@
             android:textStyle="bold"
             android:paddingHorizontal="20dp"
             android:paddingVertical="10dp"
-            android:layout_gravity="start|top" />
-
+            android:layout_gravity="start|top"/>
     </FrameLayout>
 
 
+    <!-- DIRECTIONS TOGGLE BUTTON -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/toggleDirectionsBtn"
         android:layout_width="200dp"
@@ -72,29 +73,33 @@
         app:cornerRadius="20dp"
         android:layout_gravity="bottom|center_horizontal"/>
 
-    <LinearLayout
-        android:id="@+id/bottomSheet"
-        android:layout_width="match_parent"
-        android:layout_height="350dp"
-        android:background="@color/white"
-        android:orientation="vertical"
-        app:behavior_hideable="false"
-        app:behavior_peekHeight="70dp"
-        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
-        <View
-            android:layout_width="60dp"
-            android:layout_height="6dp"
-            android:background="@drawable/bottom_sheet_handle"
-            android:layout_gravity="center"
-            android:layout_marginTop="8dp"/>
+    <!-- BACKGROUND DIMMER (invisible initially) -->
+    <View
+        android:id="@+id/darkOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone"/>
+
+    <!-- FLOATING DIRECTIONS BUBBLE -->
+    <LinearLayout
+        android:id="@+id/directionsBubble"
+        android:orientation="vertical"
+        android:background="@drawable/directions_bubble_bg"
+        android:padding="18dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="120dp">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerDirections"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:overScrollMode="never"/>
     </LinearLayout>
-
-
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
