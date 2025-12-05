@@ -2,6 +2,8 @@ package com.example.cs465;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static androidx.core.content.ContextCompat.startActivity;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -123,7 +125,9 @@ public class SavedRouteAdapter extends RecyclerView.Adapter<SavedRouteAdapter.Vi
         try {
             String gpxData = buildGpx(route);
 
-            File gpxFile = new File(context.getCacheDir(), route.name + ".gpx");
+            String fileName = "route_export_" + route.name + ".gpx";
+            File gpxFile = new File(context.getExternalFilesDir(null), fileName);
+
             FileOutputStream fos = new FileOutputStream(gpxFile);
             fos.write(gpxData.getBytes());
             fos.close();
@@ -138,6 +142,7 @@ public class SavedRouteAdapter extends RecyclerView.Adapter<SavedRouteAdapter.Vi
             shareIntent.setType("application/gpx+xml");
             shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
             shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
             context.startActivity(Intent.createChooser(shareIntent, "Export GPX"));
         } catch (Exception e) {
             e.printStackTrace();
