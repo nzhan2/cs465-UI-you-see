@@ -59,14 +59,17 @@ public class RouteGeneratorActivityHelper {
                         new Handler(Looper.getMainLooper()).post(() -> {
                             if (allRoutes.isEmpty()) {
                                 String message;
+                                String title;
                                 if ("distance".equals(constraintType)) {
-                                    message = "No routes are within your +1 km tolerance.";
+                                    title = "No Routes Found Within Distance Constraint";
+                                    message = "No routes are within a +1 km tolerance.";
                                 } else {
-                                    message = "No routes are within your +10 min tolerance.";
+                                    title = "No Routes Found Within Time Constraint";
+                                    message = "No routes are within a +10 min tolerance.";
                                 }
 
                                 new android.app.AlertDialog.Builder(context)
-                                        .setTitle("No Routes Found Within Time/Distance Constraints")
+                                        .setTitle(title)
                                         .setMessage(message)
                                         .setPositiveButton("OK", (dialog, which) -> {
                                             dialog.dismiss();
