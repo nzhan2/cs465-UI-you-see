@@ -44,14 +44,12 @@ public class RouteGeneratorActivityHelper {
                 Collections.singletonList(Collections.emptyList()) :
                 generatePermutations(intermediaries);
 
-        List<RouteInfo> allRoutes = new ArrayList<>();
         final int total = permutations.size();
         final int[] completed = {0};
 
         for (List<LatLng> midPoints: permutations) {
             getSingleRoute(origin, destination, midPoints, apiKey, constraintType, constraintValue, context, singleRoute -> {
                 synchronized (allRoutes) {
-                    // Convert List<List<LatLng>> to RouteInfo list
                     if (!singleRoute.isEmpty()) {
                         allRoutes.addAll(singleRoute);
                     }
@@ -90,7 +88,7 @@ public class RouteGeneratorActivityHelper {
     }
     private static List<List<LatLng>> generatePermutations(List<LatLng> points) {
         List<List<LatLng>> results = new ArrayList<>();
-        permute(list, 0, results);
+        permute(points, 0, results);
         return results;
     }
 
@@ -151,8 +149,10 @@ public class RouteGeneratorActivityHelper {
                 double minDifference = Double.MAX_VALUE;
 
                 try {
-                    JSONObject json = new JSONObject(response.body().string());
-                    JSONArray arr = json.getJSONArray("routes");
+//                    JSONObject json = new JSONObject(response.body().string());
+//                    JSONArray routes = json.getJSONArray("routes");
+                    JSONObject jsonObject = new JSONObject(jsonData);
+                    JSONArray routes = jsonObject.getJSONArray("routes");
                   
                     for (int i = 0; i < routes.length(); i++) {
                         JSONObject route = routes.getJSONObject(i);

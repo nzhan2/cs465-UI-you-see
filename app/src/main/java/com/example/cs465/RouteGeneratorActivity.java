@@ -492,7 +492,7 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
                                                     Toast.LENGTH_SHORT).show();
                                         },
 
-                                        // NAVIGATE PRESSED
+                                        // NAVIGATE PRESSED popupnavbutton
                                         () -> {
                                             Intent intent = new Intent(
                                                     RouteGeneratorActivity.this,
@@ -664,33 +664,33 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         saveButton.setVisibility(View.VISIBLE);
         navButton.setVisibility(View.VISIBLE);
     
-        navButton.setOnClickListener(v -> {
-            Location myLocation = mMap.getMyLocation();
-            if (myLocation == null) {
-                Toast.makeText(this, "Current location not available", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            LatLng currentLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
-
-            LatLng routeStart = points.get(0);
-            LatLng routeEnd = points.get(points.size() - 1);
-
-            ArrayList<String> intermediaryLatLings = getIntent().getStringArrayListExtra("intermediates");
-
-            LatLng landmark1 = savedIntermediaryLatLngs.size() > 0 ? savedIntermediaryLatLngs.get(0) : null;
-            LatLng landmark2 = savedIntermediaryLatLngs.size() > 1 ? savedIntermediaryLatLngs.get(1) : null;
-          
-
-            Intent intent = new Intent(RouteGeneratorActivity.this, NavigationActivity.class);
-            intent.putParcelableArrayListExtra("routePoints", new ArrayList<>(points));
-            intent.putExtra("userLocation", currentLatLng);
-            intent.putExtra("startPoint", routeStart);
-            intent.putExtra("endPoint", routeEnd);
-            intent.putExtra("landmark1", landmark1);
-            intent.putExtra("landmark2", landmark2);
-            startActivity(intent);
-        });
+//        navButton.setOnClickListener(v -> {
+//            Location myLocation = mMap.getMyLocation();
+//            if (myLocation == null) {
+//                Toast.makeText(this, "Current location not available", Toast.LENGTH_SHORT).show();
+//                return;
+//            }
+//
+//            LatLng currentLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+//
+//            LatLng routeStart = points.get(0);
+//            LatLng routeEnd = points.get(points.size() - 1);
+//
+//            ArrayList<String> intermediaryLatLings = getIntent().getStringArrayListExtra("intermediates");
+//
+//            LatLng landmark1 = savedIntermediaryLatLngs.size() > 0 ? savedIntermediaryLatLngs.get(0) : null;
+//            LatLng landmark2 = savedIntermediaryLatLngs.size() > 1 ? savedIntermediaryLatLngs.get(1) : null;
+//
+//
+//            Intent intent = new Intent(RouteGeneratorActivity.this, NavigationActivity.class);
+//            intent.putParcelableArrayListExtra("routePoints", new ArrayList<>(points));
+//            intent.putExtra("userLocation", currentLatLng);
+//            intent.putExtra("startPoint", routeStart);
+//            intent.putExtra("endPoint", routeEnd);
+//            intent.putExtra("landmark1", landmark1);
+//            intent.putExtra("landmark2", landmark2);
+//            startActivity(intent);
+//        });
     }
 
     private String buildGpxFromRoute(List<LatLng> points, List<LatLng> intermediates) {
