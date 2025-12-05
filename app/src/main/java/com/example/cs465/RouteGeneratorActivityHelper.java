@@ -1,4 +1,5 @@
 package com.example.cs465;
+
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -16,13 +17,14 @@ import java.util.List;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.Request;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.Response;
 import android.content.Context;
 
 
 public class RouteGeneratorActivityHelper {
+
     public interface RoutesCallback {
         void onRoutesFetched(List<RouteInfo> routes);
     }
@@ -93,73 +95,53 @@ public class RouteGeneratorActivityHelper {
         return results;
     }
 
-    private static void permute(List<LatLng> arr, int k, List<List<LatLng>> results) {
-        for (int i = k; i < arr.size(); i++) {
-            Collections.swap(arr, i, k);
-            permute(arr, k + 1, results);
-            Collections.swap(arr, k, i);
+    private static void permute(List<LatLng> arr, int start, List<List<LatLng>> out) {
+        for (int i = start; i < arr.size(); i++) {
+            Collections.swap(arr, i, start);
+            permute(arr, start + 1, out);
+            Collections.swap(arr, start, i);
         }
-        if (k == arr.size() - 1) {
-            results.add(new ArrayList<>(arr));
+        if (start == arr.size() - 1) {
+            out.add(new ArrayList<>(arr));
         }
     }
 
     private static void getSingleRoute(LatLng origin, LatLng destination, List<LatLng> intermediaries, String apiKey, String constraintType, double constraintValue, Context context, RoutesCallback routesCallback) {
         OkHttpClient client = new OkHttpClient();
-
+      
         String url = "https://routes.googleapis.com/directions/v2:computeRoutes?key=" + apiKey;
 
-        JSONObject bodyJson = new JSONObject();
+        JSONObject body = new JSONObject();
         try {
-            JSONObject originLatLng = new JSONObject();
-            originLatLng.put("latitude", origin.latitude);
-            originLatLng.put("longitude", origin.longitude);
-            JSONObject originLocation = new JSONObject();
-            originLocation.put("latLng", originLatLng);
-            JSONObject originObject = new JSONObject();
-            originObject.put("location", originLocation);
-
-            JSONObject destLatLng = new JSONObject();
-            destLatLng.put("latitude", destination.latitude);
-            destLatLng.put("longitude", destination.longitude);
-            JSONObject destLocation = new JSONObject();
-            destLocation.put("latLng", destLatLng);
-            JSONObject destObject = new JSONObject();
-            destObject.put("location", destLocation);
-
-            bodyJson.put("origin", originObject);
-            bodyJson.put("destination", destObject);
+            body.put("origin", locationObject(origin));
+            body.put("destination", locationObject(destination));
 
             if (intermediaries != null && !intermediaries.isEmpty()) {
-                JSONArray intermediatesArray = new JSONArray();
-                for (LatLng interm: intermediaries) {
-                    JSONObject intermediatesLatLng = new JSONObject();
-                    intermediatesLatLng.put("latitude", interm.latitude);
-                    intermediatesLatLng.put("longitude", interm.longitude);
-                    JSONObject intermediatesLocation = new JSONObject();
-                    intermediatesLocation.put("latLng", intermediatesLatLng);
-                    JSONObject intermediatesObject = new JSONObject();
-                    intermediatesObject.put("location", intermediatesLocation);
-                    intermediatesArray.put(intermediatesObject);
-                }
-                bodyJson.put("intermediates", intermediatesArray);
+                JSONArray arr = new JSONArray();
+                for (LatLng ll : intermediaries) arr.put(locationObject(ll));
+                body.put("intermediates", arr);
             }
-            bodyJson.put("travelMode", "WALK");
-            bodyJson.put("computeAlternativeRoutes", true);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
-        Request request = new Request.Builder().url(url)
-                .post(okhttp3.RequestBody.create(bodyJson.toString(), okhttp3.MediaType.parse("application/json")))
-                .addHeader("X-Goog-FieldMask", "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline")
+            body.put("travelMode", "WALK");
+            body.put("computeAlternativeRoutes", true);
+        } catch (Exception ignored) {}
+
+        Request request = new Request.Builder()
+                .url(url)
+                .post(okhttp3.RequestBody.create(
+                        body.toString(),
+                        okhttp3.MediaType.parse("application/json")))
+                .addHeader("X-Goog-FieldMask",
+                        "routes.distanceMeters," +
+                                "routes.duration," +
+                                "routes.polyline.encodedPolyline," +
+                                "routes.legs.steps.polyline.encodedPolyline," +
+                                "routes.legs.steps.navigationInstruction")
+
                 .build();
 
         client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-            }
+            @Override public void onFailure(Call call, IOException e) {}
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
@@ -170,9 +152,11 @@ public class RouteGeneratorActivityHelper {
                 double minDifference = Double.MAX_VALUE;
 
                 try {
+//                    JSONObject json = new JSONObject(response.body().string());
+//                    JSONArray routes = json.getJSONArray("routes");
                     JSONObject jsonObject = new JSONObject(jsonData);
                     JSONArray routes = jsonObject.getJSONArray("routes");
-
+                  
                     for (int i = 0; i < routes.length(); i++) {
                         JSONObject route = routes.getJSONObject(i);
                         String polyline = route.getJSONObject("polyline").getString("encodedPolyline");
@@ -229,34 +213,60 @@ public class RouteGeneratorActivityHelper {
 //        });
 //    }
 
-    public static void geocodePlace(String placeName, String apiKey, GeocodeCallback callback) {
-        Log.d("debug", "geocodePlace: " + placeName);
-        OkHttpClient client = new OkHttpClient();
-        String url = "https://maps.googleapis.com/maps/api/geocode/json?address=" + placeName.replace(" ", "+") + "&key=" + apiKey;
-        Request request = new Request.Builder().url(url).build();
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                e.printStackTrace();
-            }
 
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                String jsonData = response.body().string();
-                Log.d("RouteHelper", "Geocode API response: " + jsonData);
-                try {
-                    JSONObject jsonObject = new JSONObject(jsonData);
-                    JSONArray results = jsonObject.getJSONArray("results");
-                    if (results.length() > 0) {
-                        JSONObject location = results.getJSONObject(0).getJSONObject("geometry").getJSONObject("location");
-                        double lat = location.getDouble("lat");
-                        double lng = location.getDouble("lng");
-                        new Handler(Looper.getMainLooper()).post(() -> callback.onGeocoded(new LatLng(lat, lng)));
+
+    private static JSONObject locationObject(LatLng ll) throws Exception {
+        JSONObject pos = new JSONObject();
+        pos.put("latitude", ll.latitude);
+        pos.put("longitude", ll.longitude);
+        JSONObject loc = new JSONObject();
+        loc.put("latLng", pos);
+        JSONObject ret = new JSONObject();
+        ret.put("location", loc);
+        return ret;
+    }
+
+    public static void geocodePlace(String place, String key, GeocodeCallback cb) {
+        OkHttpClient client = new OkHttpClient();
+        String url = "https://maps.googleapis.com/maps/api/geocode/json?address=" +
+                place.replace(" ", "+") + "&key=" + key;
+
+        client.newCall(new Request.Builder().url(url).build())
+                .enqueue(new Callback() {
+                    @Override public void onFailure(Call c, IOException e) {}
+
+                    @Override
+                    public void onResponse(Call c, Response r) throws IOException {
+                        try {
+                            JSONObject json = new JSONObject(r.body().string());
+                            JSONObject loc = json.getJSONArray("results")
+                                    .getJSONObject(0)
+                                    .getJSONObject("geometry")
+                                    .getJSONObject("location");
+                            LatLng res = new LatLng(loc.getDouble("lat"), loc.getDouble("lng"));
+                            new Handler(Looper.getMainLooper()).post(() -> cb.onGeocoded(res));
+                        } catch (Exception ignored) {}
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                });
+    }
+
+
+    private static List<String> extractInstructions(JSONObject routeJson) {
+        List<String> list = new ArrayList<>();
+        try {
+            JSONArray legs = routeJson.getJSONArray("legs");
+            JSONObject leg = legs.getJSONObject(0);
+            JSONArray steps = leg.getJSONArray("steps");
+
+            for (int i = 0; i < steps.length(); i++) {
+                JSONObject step = steps.getJSONObject(i);
+                JSONObject navInst = step.optJSONObject("navigationInstruction");
+                if (navInst != null) {
+                    list.add(navInst.getString("instructions"));
                 }
             }
-        });
+        } catch (Exception ignored) {}
+        return list;
     }
+
 }
