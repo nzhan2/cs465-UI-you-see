@@ -11,8 +11,8 @@
         android:id="@+id/historyRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp"
-        android:clipToPadding="false"/>
+        android:clipToPadding="false"
+        android:padding="8dp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/clearHistoryButton"
@@ -45,6 +45,7 @@
         android:layout_gravity="start|bottom"
         android:layout_marginBottom="24dp"
         android:backgroundTint="#FF7F50"/>
+
 
 
 </FrameLayout>

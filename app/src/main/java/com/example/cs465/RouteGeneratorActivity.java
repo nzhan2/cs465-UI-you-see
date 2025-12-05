@@ -297,7 +297,7 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
             constraintType = "time";
         }
 
-        double constraintValue = 0;
+        double constraintValue = 1.5; // changed
         try {
             constraintValue = Double.parseDouble(value);
         } catch (NumberFormatException e) {
@@ -313,6 +313,16 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
                 geocodeAllPlaces(intermediaries, apiKey, intermediaryLatLngs -> {
                     RouteGeneratorActivityHelper.getRoutes(originLatLng, destLatLng, intermediaryLatLngs, apiKey, finalConstraintType, finalConstraintValue, RouteGeneratorActivity.this, routes -> {
 //                        StringBuilder infoBuilder = new StringBuilder();
+                        //send to call to history - edit1
+//                        if (!routes.isEmpty()) {
+//                            RouteHistoryItem historyItem = new RouteHistoryItem(
+//                                    start,
+//                                    end,
+//                                    System.currentTimeMillis()
+//                            );
+//                            HistoryStorage.saveRoute(RouteGeneratorActivity.this, historyItem);
+//                        }
+
                         SpannableStringBuilder infoBuilder = new SpannableStringBuilder();
                         savedIntermediaryLatLngs = intermediaryLatLngs;
 

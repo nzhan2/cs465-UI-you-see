@@ -12,6 +12,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -33,6 +34,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //history dummy test
+//        HistoryStorage.saveRoute(
+//                this,
+//                new RouteHistoryItem(
+//                        "Illini Union",
+//                        "Foellinger Auditorium",
+//                        System.currentTimeMillis()
+//                )
+//        );
 
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
@@ -57,10 +67,22 @@ public class MainActivity extends AppCompatActivity {
         endEdit.setAdapter(adapter);
         landmarksEditText.setAdapter(adapter);*/
 
-        // Optional: show suggestions after typing 1 character
         /*startEdit.setThreshold(1);
         endEdit.setThreshold(1);
         landmarksEditText.setThreshold(1);*/
+
+        Intent intent = getIntent();
+        if (intent != null && intent.getBooleanExtra("from_history", false)) {
+            String startFromHistory = intent.getStringExtra("start");
+            String endFromHistory = intent.getStringExtra("end");
+
+            if (startFromHistory != null) {
+                startEdit.setText(startFromHistory);
+            }
+            if (endFromHistory != null) {
+                endEdit.setText(endFromHistory);
+            }
+        }
 
         Button generateButton = findViewById(R.id.generateButton);
         RadioButton timeRadio = findViewById(R.id.timeRadio);
@@ -82,31 +104,49 @@ public class MainActivity extends AppCompatActivity {
         EditText distanceEdit = findViewById(R.id.constraintValueInput);
 
         generateButton.setOnClickListener(v -> {
-            Log.d("debug", "test");
-            Log.d("debug", "start: " + startEdit.getText());
+//update generate button to build history when clicked
             String start = startEdit.getText().toString().trim();
-            String end = endEdit.getText().toString().trim();
-            List<String> intermediates = Arrays.asList(
-                    landmarksEditText.getText().toString().trim().split("\\s*,\\s*"));
-            ArrayList<String> locationList = new ArrayList<>();
-            locationList.add(start);
-            locationList.addAll(intermediates);
-            locationList.add(end);
-
-            Intent intent = new Intent(MainActivity.this, RouteGeneratorActivity.class);
-
-            String measure = (timeRadio.isChecked()) ? "time" : "distance";
+            String end   = endEdit.getText().toString().trim();
+            String rawLandmarks = landmarksEditText.getText().toString().trim();
             String value = distanceEdit.getText().toString().trim();
 
-            intent.putExtra("start", start);
-            intent.putStringArrayListExtra("intermediates", new ArrayList<>(intermediates));
-            intent.putExtra("end", end);
-            intent.putExtra("measure", measure);
-            intent.putExtra("value", value);
-            startActivity(intent);
+            if (start.isEmpty() || end.isEmpty()) {
+                Toast.makeText(MainActivity.this,
+                        "Please enter both start and end locations",
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (value.isEmpty()) {
+                Toast.makeText(MainActivity.this,
+                        "Please enter a time/distance constraint",
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+            RouteHistoryItem historyItem = new RouteHistoryItem(
+                    start,
+                    end,
+                    System.currentTimeMillis()
+            );
+            HistoryStorage.saveRoute(MainActivity.this, historyItem);
+
+            List<String> intermediates = new ArrayList<>();
+            if (!rawLandmarks.isEmpty()) {
+                intermediates = Arrays.asList(rawLandmarks.split("\\s*,\\s*"));
+            }
+
+            Intent buttonintent = new Intent(MainActivity.this, RouteGeneratorActivity.class);
+
+            String measure = (timeRadio.isChecked()) ? "time" : "distance";
+
+            buttonintent.putExtra("start", start);
+            buttonintent.putStringArrayListExtra("intermediates", new ArrayList<>(intermediates));
+            buttonintent.putExtra("end", end);
+            buttonintent.putExtra("measure", measure);
+            buttonintent.putExtra("value", value);
+
+            startActivity(buttonintent);
         });
 
-        // History button not fully functional with real route data
         LinearLayout historySection = findViewById(R.id.historySection);
         historySection.setOnClickListener(v ->
                 startActivity(new Intent(this, HistoryActivity.class))
