@@ -86,13 +86,20 @@ public class MainActivity extends AppCompatActivity {
             Log.d("debug", "start: " + startEdit.getText());
             String start = startEdit.getText().toString().trim();
             String end = endEdit.getText().toString().trim();
+
+            RouteHistoryItem historyItem = new RouteHistoryItem(
+                    start,
+                    end,
+                    System.currentTimeMillis()
+            );
+            HistoryStorage.saveRoute(MainActivity.this, historyItem);
+
             List<String> intermediates = Arrays.asList(
                     landmarksEditText.getText().toString().trim().split("\\s*,\\s*"));
             ArrayList<String> locationList = new ArrayList<>();
             locationList.add(start);
             locationList.addAll(intermediates);
             locationList.add(end);
-
             Intent intent = new Intent(MainActivity.this, RouteGeneratorActivity.class);
 
             String measure = (timeRadio.isChecked()) ? "time" : "distance";
