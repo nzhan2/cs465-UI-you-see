@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -33,6 +34,7 @@ import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -108,11 +110,11 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         void onAllGeocoded(List<LatLng> allLatLngs);
     }
     int[] routeColors = {
-            Color.parseColor("#0f69fa"),
-            Color.parseColor("#cf4e3a"),
-            Color.parseColor("#6abd62"),
-            Color.parseColor("#7965d6"), // soft purple
-            Color.parseColor("#8FD0C6")  // soft teal
+            Color.parseColor("#FDCA40"),
+            Color.parseColor("#33B5E5"),
+            Color.parseColor("#5FAD56"),
+            Color.parseColor("#FF6978"),
+            Color.parseColor("#6D435A"),
     };
 
     private ScrollView routeInfoTextView;
@@ -257,6 +259,16 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
+
+        try {
+            boolean success = googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(this, R.raw.map_style));
+            if (!success) {
+                Log.e("MapStyle", "Style parsing failed.");
+            }
+        } catch (Resources.NotFoundException e) {
+            Log.e("MapStyle", "Can't find style. Error: ", e);
+        }
 
         mMap.setOnMyLocationButtonClickListener(this);
         mMap.setOnMyLocationClickListener(this);
