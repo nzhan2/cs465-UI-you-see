@@ -656,6 +656,18 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         selectedStart = selectedRoutePoints.get(0);
         selectedEnd = selectedRoutePoints.get(selectedRoutePoints.size() - 1);
 
+        // add route to history
+        RouteHistoryItem historyItem = new RouteHistoryItem(
+                start,
+                end,
+                System.currentTimeMillis(),
+                new ArrayList<>(selectedRoutePoints),
+                selectedStart,
+                selectedEnd,
+                savedIntermediaryLatLngs
+        );
+        HistoryStorage.saveRoute(RouteGeneratorActivity.this, historyItem);
+
         // Zoom to that route
         LatLngBounds.Builder builder = new LatLngBounds.Builder();
         for (LatLng point : selectedRoutePoints) builder.include(point);

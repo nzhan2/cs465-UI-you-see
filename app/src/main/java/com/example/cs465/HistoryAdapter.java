@@ -8,6 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -18,9 +19,12 @@ import android.content.Intent;
 public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
     private final List<RouteHistoryItem> routes;
     private final SimpleDateFormat sdf = new SimpleDateFormat("MMM d, h:mm a", Locale.getDefault());
+    private final Context context;
 
-    public HistoryAdapter(List<RouteHistoryItem> routes) {
+    public HistoryAdapter(List<RouteHistoryItem> routes, Context context) {
+
         this.routes = routes;
+        this.context = context;
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
@@ -48,17 +52,10 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         holder.routeText.setText(item.getOrigin() + " → " + item.getDestination());
         holder.dateText.setText(sdf.format(new Date(item.getTimestamp())));
         holder.viewRouteButton.setOnClickListener(v -> {
-            int pos = holder.getAdapterPosition();
-            if (pos == RecyclerView.NO_POSITION) return;
-
-            RouteHistoryItem clicked = routes.get(pos);
-            Context ctx = v.getContext();
-
-            Intent intent = new Intent(ctx, MainActivity.class);
-            intent.putExtra("from_history", true);
-            intent.putExtra("start", clicked.getOrigin());
-            intent.putExtra("end", clicked.getDestination());
-            ctx.startActivity(intent);
+            Intent intent = new Intent(context, NavigationActivity.class);
+            intent.putParcelableArrayListExtra("routePoints", new ArrayList<>(item.polylinePoints));
+            intent.putExtra("userLocation", item.start);
+            context.startActivity(intent);
         });
     }
 
