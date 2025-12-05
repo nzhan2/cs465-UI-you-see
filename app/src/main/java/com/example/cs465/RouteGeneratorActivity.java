@@ -315,6 +315,8 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 //                        StringBuilder infoBuilder = new StringBuilder();
                         SpannableStringBuilder infoBuilder = new SpannableStringBuilder();
                         savedIntermediaryLatLngs = intermediaryLatLngs;
+                        Log.d("DEBUG_STEPS", routes.get(0).instructions.toString());
+
 
                         List<Polyline> polylines = new ArrayList<>();
 
@@ -341,7 +343,8 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
                             infoBuilder.setSpan(new ClickableSpan() {
                                 @Override
                                 public void onClick(View widget) {
-                                    selectRoute(index, polylines);
+                                    selectRoute(index, polylines, routes);
+
                                 }
                             }, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
@@ -430,34 +433,46 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
 // Click behavior
                             final int index = i;
-                            routeItem.setOnClickListener(v -> { selectRoute(index, polylines);
+                            routeItem.setOnClickListener(v -> {
+                                // Highlight route on map + store selectedPoint list
+                                selectRoute(index, polylines, routes);
+
+
+                                // Get the selected route data (path + instructions)
+                                RouteInfo selectedRoute = routes.get(index);
+
                                 showRouteDetailsPopup(
-                                    "Route " + (index + 1),
-                                    route.distanceText,
-                                    route.durationText,
+                                        "Route " + (index + 1),
+                                        selectedRoute.distanceText,
+                                        selectedRoute.durationText,
+
+                                        // SAVE PRESSED
                                         () -> {
-                                            if (selectedRoutePoints == null || selectedStart == null || selectedEnd == null) {
-                                                Toast.makeText(this, "Route not fully defined", Toast.LENGTH_SHORT).show();
+                                            if (selectedRoutePoints == null ||
+                                                    selectedStart == null ||
+                                                    selectedEnd == null) {
+                                                Toast.makeText(this,
+                                                        "Route not fully defined",
+                                                        Toast.LENGTH_SHORT).show();
                                                 return;
                                             }
 
                                             SharedPreferences prefs = getSharedPreferences("routes", MODE_PRIVATE);
                                             Gson gson = new Gson();
 
-                                            // Load existing saved routes
                                             String existingJson = prefs.getString("saved_routes_list", null);
                                             ArrayList<SavedRoute> savedRoutes;
+
                                             if (existingJson != null) {
                                                 Type listType = new TypeToken<ArrayList<SavedRoute>>(){}.getType();
                                                 savedRoutes = gson.fromJson(existingJson, listType);
                                             } else {
                                                 savedRoutes = new ArrayList<>();
                                             }
-                                            // Determine next route number
+
                                             int routeNumber = savedRoutes.size() + 1;
                                             String routeName = "Route " + routeNumber;
 
-                                            long timestamp = System.currentTimeMillis();
                                             SavedRoute newRoute = new SavedRoute(
                                                     routeName,
                                                     new ArrayList<>(selectedRoutePoints),
@@ -465,48 +480,57 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
                                                     selectedEnd,
                                                     savedIntermediaryLatLngs
                                             );
-                                            // Add the new route
+
                                             savedRoutes.add(newRoute);
 
-                                            // Save back to SharedPreferences
-                                            prefs.edit().putString("saved_routes_list", gson.toJson(savedRoutes)).apply();
+                                            prefs.edit()
+                                                    .putString("saved_routes_list", gson.toJson(savedRoutes))
+                                                    .apply();
 
-                                            Toast.makeText(this, "Route saved!", Toast.LENGTH_SHORT).show();
+                                            Toast.makeText(this,
+                                                    "Route saved!",
+                                                    Toast.LENGTH_SHORT).show();
                                         },
 
-                                        // NAVIGATE pressed
+                                        // NAVIGATE PRESSED
                                         () -> {
-                                            List<LatLng> points = polylines.get(index).getPoints();
-                                            LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                                            for (LatLng point : points) builder.include(point);
+                                            Intent intent = new Intent(
+                                                    RouteGeneratorActivity.this,
+                                                    NavigationActivity.class
+                                            );
 
-                                            Location myLocation = mMap.getMyLocation();
-                                            if (myLocation == null) {
-                                                Toast.makeText(this, "Current location not available", Toast.LENGTH_SHORT).show();
-                                                return;
-                                            }
+                                            intent.putParcelableArrayListExtra(
+                                                    "routePoints",
+                                                    new ArrayList<>(selectedRoutePoints)
+                                            );
 
-                                            LatLng currentLatLng = new LatLng(myLocation.getLatitude(), myLocation.getLongitude());
+                                            // Markers
+                                            intent.putExtra("startPoint", selectedStart);
+                                            intent.putExtra("endPoint", selectedEnd);
 
-                                            LatLng routeStart = points.get(0);
-                                            LatLng routeEnd = points.get(points.size() - 1);
+                                            // Route polyline color
+                                            intent.putExtra("routeColor", routeColors[index % routeColors.length]);
 
-                                            ArrayList<String> intermediaryLatLings = getIntent().getStringArrayListExtra("intermediates");
+                                            // Pass stop markers (intermediary latlngs)
+                                            intent.putParcelableArrayListExtra(
+                                                    "stopPoints",
+                                                    new ArrayList<>(savedIntermediaryLatLngs)
+                                            );
 
-                                            LatLng landmark1 = savedIntermediaryLatLngs.size() > 0 ? savedIntermediaryLatLngs.get(0) : null;
-                                            LatLng landmark2 = savedIntermediaryLatLngs.size() > 1 ? savedIntermediaryLatLngs.get(1) : null;
+                                            // Pass their names too
+                                            intent.putStringArrayListExtra(
+                                                    "stopNames",
+                                                    new ArrayList<>(intermediateLocations)
+                                            );
 
-
-                                            Intent intent = new Intent(RouteGeneratorActivity.this, NavigationActivity.class);
-                                            intent.putParcelableArrayListExtra("routePoints", new ArrayList<>(points));
-                                            intent.putExtra("userLocation", currentLatLng);
-                                            intent.putExtra("startPoint", routeStart);
-                                            intent.putExtra("endPoint", routeEnd);
-                                            intent.putExtra("landmark1", landmark1);
-                                            intent.putExtra("landmark2", landmark2);
                                             startActivity(intent);
                                         }
-                            ); });
+
+
+                                );
+                            });
+
+
 
                             container.addView(routeItem);
                         }
@@ -610,10 +634,11 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
     }
 
 
-    private void selectRoute(int selectedIndex, List<Polyline> polylines) {
+    private void selectRoute(int selectedIndex, List<Polyline> polylines, List<RouteInfo> routes) {
+
+        // Highlight selected polyline
         for (int i = 0; i < polylines.size(); i++) {
             Polyline p = polylines.get(i);
-
             if (i == selectedIndex) {
                 p.setWidth(20f);
                 p.setZIndex(10);
@@ -623,21 +648,22 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
             }
         }
 
-        // save route
-        selectedRoutePoints = new ArrayList<>(polylines.get(selectedIndex).getPoints());
+        // Get correct matching RouteInfo data
+        RouteInfo selected = routes.get(selectedIndex);
+
+        // Assign the TRUE route path
+        selectedRoutePoints = new ArrayList<>(selected.path);
         selectedStart = selectedRoutePoints.get(0);
         selectedEnd = selectedRoutePoints.get(selectedRoutePoints.size() - 1);
 
-
-        List<LatLng> points = polylines.get(selectedIndex).getPoints();
+        // Zoom to that route
         LatLngBounds.Builder builder = new LatLngBounds.Builder();
-        for (LatLng point : points) builder.include(point);
-
+        for (LatLng point : selectedRoutePoints) builder.include(point);
         mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(builder.build(), 150));
 
         saveButton.setVisibility(View.VISIBLE);
         navButton.setVisibility(View.VISIBLE);
-
+    
         navButton.setOnClickListener(v -> {
             Location myLocation = mMap.getMyLocation();
             if (myLocation == null) {
@@ -654,7 +680,7 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
             LatLng landmark1 = savedIntermediaryLatLngs.size() > 0 ? savedIntermediaryLatLngs.get(0) : null;
             LatLng landmark2 = savedIntermediaryLatLngs.size() > 1 ? savedIntermediaryLatLngs.get(1) : null;
-
+          
 
             Intent intent = new Intent(RouteGeneratorActivity.this, NavigationActivity.class);
             intent.putParcelableArrayListExtra("routePoints", new ArrayList<>(points));
@@ -799,7 +825,9 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         });
     }
 
-    private void showRouteDetailsPopup(String title, String distance, String duration,  Runnable onSavePressed, Runnable onNavigatePressed) {
+    private void showRouteDetailsPopup(String title, String distance, String duration,
+                                       Runnable onSavePressed,
+                                       Runnable onNavigatePressed) {
 
         BottomSheetDialog dialog = new BottomSheetDialog(this);
         View view = getLayoutInflater().inflate(R.layout.route_details_popup, null);
@@ -812,29 +840,13 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         distanceView.setText("Distance: " + distance);
         durationView.setText("Duration: " + duration);
 
-//        ViewPager2 gallery = view.findViewById(R.id.imageGallery);
-//
-//        List<Integer> galleryImages = new ArrayList<>();
-//
-//        galleryImages.add(
-//                landmarkImageMap.getOrDefault("ARC 1", landmarkImageMap.get("default"))
-//        );
-//        galleryImages.add(
-//                landmarkImageMap.getOrDefault("ARC 2", landmarkImageMap.get("default"))
-//
-//        );
-//
-//
-//        gallery.setAdapter(new ImageGalleryAdapter(this, galleryImages));
-
+        // Stop Gallery
         LinearLayout galleryContainer = view.findViewById(R.id.stopGalleryContainer);
         galleryContainer.removeAllViews();
 
-        // For each stop, add a header + gallery
         for (int i = 0; i < intermediateLocations.size(); i++) {
             String stopName = intermediateLocations.get(i);
 
-            // Header for stop
             TextView stopHeader = new TextView(this);
             stopHeader.setText("Stop " + (i + 1) + ": " + stopName);
             stopHeader.setTextSize(16f);
@@ -843,16 +855,13 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
             stopHeader.setTypeface(null, Typeface.BOLD);
             galleryContainer.addView(stopHeader);
 
-            // Gallery for stop
             ViewPager2 gallery = new ViewPager2(this);
             gallery.setLayoutParams(new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     200
             ));
 
-            // Get images for this stop, or default if none
             List<Integer> galleryImages = new ArrayList<>();
-//            String key = stopName; // or map your stops to specific images
             if (i == 0) {
                 galleryImages.add(landmarkImageMap.getOrDefault("CRCE 1", landmarkImageMap.get("default")));
                 galleryImages.add(landmarkImageMap.getOrDefault("CRCE 2", landmarkImageMap.get("default")));
@@ -862,7 +871,6 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
             }
 
             gallery.setAdapter(new ImageGalleryAdapter(this, galleryImages));
-
             galleryContainer.addView(gallery);
         }
 
@@ -877,7 +885,7 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
 
         popupNavButton.setOnClickListener(v -> {
             dialog.dismiss();
-            onNavigatePressed.run();
+            onNavigatePressed.run();  // << CORRECT BEHAVIOR
         });
 
         popupExportButton.setOnClickListener(v -> {
@@ -915,6 +923,7 @@ public class RouteGeneratorActivity extends FragmentActivity  implements OnMapRe
         dialog.setContentView(view);
         dialog.show();
     }
+
 
 }
 
